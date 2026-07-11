@@ -179,5 +179,46 @@ class Database:
 
         self.conn.commit()
 
+    def save_baseline_item_ids(
+        self,
+        baseline_items,
+        keyword,
+    ):
+        if not baseline_items:
+            return 0
+
+        rows = [
+            (
+                item_id,
+                keyword,
+                None,
+                None,
+                url,
+                "baseline",
+                "startup_baseline",
+            )
+            for item_id, url in baseline_items
+        ]
+
+        self.cursor.executemany(
+            """
+            INSERT OR IGNORE INTO items(
+                id,
+                keyword,
+                title,
+                price,
+                url,
+                status,
+                ignore_reason
+            )
+            VALUES(?, ?, ?, ?, ?, ?, ?)
+            """,
+            rows,
+        )
+
+        self.conn.commit()
+
+        return self.cursor.rowcount
+
     def close(self):
         self.conn.close()

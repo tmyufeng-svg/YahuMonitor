@@ -117,20 +117,26 @@ def should_notify_items(scan):
     return scan > 1 or NOTIFY_EXISTING_ON_STARTUP
 
 
-def save_startup_baseline(yahoo, db, item_id, keyword):
-    item_url = yahoo.build_item_url(item_id)
+def save_startup_baseline_items(yahoo, db, item_ids, keyword):
+    baseline_items = [
+        (
+            item_id,
+            yahoo.build_item_url(item_id),
+        )
+        for item_id in item_ids
+    ]
 
-    db.save_baseline_item_id(
-        item_id=item_id,
+    saved_count = db.save_baseline_item_ids(
+        baseline_items=baseline_items,
         keyword=keyword,
-        url=item_url,
     )
 
-    logger.info(
-        f"[{keyword}] 已加入启动基线 {item_id}"
-    )
+    if saved_count:
+        logger.info(
+            f"[{keyword}] 已批量加入启动基线 {saved_count} 件"
+        )
 
-    return "baseline"
+    return saved_count
 
 
 def scan_once(yahoo, db, notifier, keyword, scan):
@@ -147,20 +153,22 @@ def scan_once(yahoo, db, notifier, keyword, scan):
     ignored_count = 0
     baseline_count = 0
     notify_item = should_notify_items(scan)
+    new_item_ids = [
+        item_id
+        for item_id in items
+        if item_id not in existing_ids
+    ]
 
-    for item_id in items:
-        if item_id in existing_ids:
-            continue
+    if not notify_item:
+        baseline_count = save_startup_baseline_items(
+            yahoo=yahoo,
+            db=db,
+            item_ids=new_item_ids,
+            keyword=keyword,
+        )
 
-        if not notify_item:
-            result = save_startup_baseline(
-                yahoo=yahoo,
-                db=db,
-                item_id=item_id,
-                keyword=keyword,
-            )
-
-        else:
+    else:
+        for item_id in new_item_ids:
             result = process_item(
                 yahoo=yahoo,
                 db=db,
@@ -169,14 +177,14 @@ def scan_once(yahoo, db, notifier, keyword, scan):
                 keyword=keyword,
             )
 
-        if result == "notified":
-            new_count += 1
+            if result == "notified":
+                new_count += 1
 
-        elif result == "ignored":
-            ignored_count += 1
+            elif result == "ignored":
+                ignored_count += 1
 
-        elif result == "baseline":
-            baseline_count += 1
+            elif result == "baseline":
+                baseline_count += 1
 
     elapsed = time.perf_counter() - start
 

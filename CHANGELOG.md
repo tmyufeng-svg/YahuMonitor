@@ -11,6 +11,7 @@
 - Startup baseline mode to avoid notifying all existing listings on a fresh database.
 - Fast startup baseline seeding without opening every item detail page.
 - Batched duplicate checks for each scan to reduce SQLite queries.
+- Batched startup baseline inserts into a single SQLite transaction per keyword.
 
 ### Changed
 
