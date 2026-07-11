@@ -5,6 +5,8 @@ from config import (
     TOKEN,
     CHAT_ID,
     DATABASE_NAME,
+    DATABASE_BUSY_TIMEOUT_MS,
+    DATABASE_ENABLE_WAL,
     SCAN_INTERVAL,
     ERROR_RETRY_INTERVAL,
     KEYWORDS,
@@ -307,6 +309,14 @@ def validate_runtime_config():
         "NOTIFY_EXISTING_ON_STARTUP",
         NOTIFY_EXISTING_ON_STARTUP,
     )
+    validate_boolean(
+        "DATABASE_ENABLE_WAL",
+        DATABASE_ENABLE_WAL,
+    )
+    validate_non_negative_integer(
+        "DATABASE_BUSY_TIMEOUT_MS",
+        DATABASE_BUSY_TIMEOUT_MS,
+    )
     validate_positive_number(
         "SCAN_INTERVAL",
         SCAN_INTERVAL,
@@ -365,12 +375,18 @@ def main():
     try:
         validate_runtime_config()
 
-        db = Database(DATABASE_NAME)
+        db = Database(
+            db_name=DATABASE_NAME,
+            busy_timeout_ms=DATABASE_BUSY_TIMEOUT_MS,
+            enable_wal=DATABASE_ENABLE_WAL,
+        )
         item_counts = db.count_items_by_status()
 
         logger.info(
             f"Database 已连接 | "
             f"File={DATABASE_NAME} | "
+            f"WAL={DATABASE_ENABLE_WAL} | "
+            f"BusyTimeout={DATABASE_BUSY_TIMEOUT_MS}ms | "
             f"Items={item_counts['total']} | "
             f"Notified={item_counts['notified']} | "
             f"Ignored={item_counts['ignored']} | "

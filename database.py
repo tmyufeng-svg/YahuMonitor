@@ -3,11 +3,21 @@ import sqlite3
 
 class Database:
 
-    def __init__(self, db_name="items.db"):
+    def __init__(
+        self,
+        db_name="items.db",
+        busy_timeout_ms=5000,
+        enable_wal=True,
+    ):
 
         self.conn = sqlite3.connect(db_name)
 
         self.cursor = self.conn.cursor()
+
+        self._configure_connection(
+            busy_timeout_ms=busy_timeout_ms,
+            enable_wal=enable_wal,
+        )
 
         self.cursor.execute(
             """
@@ -32,7 +42,23 @@ class Database:
         self._ensure_column("ignore_reason", "TEXT")
         self._ensure_column("first_seen", "TEXT")
 
+        self._create_indexes()
+
         self.conn.commit()
+
+    def _configure_connection(
+        self,
+        busy_timeout_ms,
+        enable_wal,
+    ):
+
+        self.cursor.execute(
+            f"PRAGMA busy_timeout = {int(busy_timeout_ms)}"
+        )
+
+        if enable_wal:
+            self.cursor.execute("PRAGMA journal_mode=WAL")
+            self.cursor.execute("PRAGMA synchronous=NORMAL")
 
     def _ensure_column(self, column_name, column_type):
 
@@ -49,6 +75,29 @@ class Database:
         self.cursor.execute(
             f"ALTER TABLE items ADD COLUMN "
             f"{column_name} {column_type}"
+        )
+
+    def _create_indexes(self):
+
+        self.cursor.execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_items_keyword
+            ON items(keyword)
+            """
+        )
+
+        self.cursor.execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_items_status
+            ON items(status)
+            """
+        )
+
+        self.cursor.execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_items_first_seen
+            ON items(first_seen)
+            """
         )
 
     def exists(self, item_id):

@@ -12,6 +12,7 @@
 - Fast startup baseline seeding without opening every item detail page.
 - Batched duplicate checks for each scan to reduce SQLite queries.
 - Batched startup baseline inserts into a single SQLite transaction per keyword.
+- SQLite WAL mode, busy timeout, and common indexes for steadier long-running scans.
 
 ### Changed
 
