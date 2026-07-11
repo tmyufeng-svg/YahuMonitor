@@ -34,3 +34,11 @@ KEYWORDS = [
     "Contax T3",
     "Nikon L35AF",
 ]
+
+
+# 标题屏蔽词
+BLOCKED_TITLE_KEYWORDS = [
+    "ジャンク",
+    "動作未確認",
+    "部品取り",
+]

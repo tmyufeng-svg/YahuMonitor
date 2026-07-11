@@ -8,6 +8,7 @@ from config import (
     SCAN_INTERVAL,
     ERROR_RETRY_INTERVAL,
     KEYWORDS,
+    BLOCKED_TITLE_KEYWORDS,
     MAX_BROWSER_RESTARTS_PER_SCAN,
     SEND_STARTUP_MESSAGE,
 )
@@ -17,18 +18,39 @@ from notifier import TelegramNotifier
 from yahoo import YahooScraper
 
 
+def title_has_blocked_keyword(title):
+    normalized_title = title.casefold()
+
+    for blocked_keyword in BLOCKED_TITLE_KEYWORDS:
+        if blocked_keyword.casefold() in normalized_title:
+            return blocked_keyword
+
+    return None
+
+
 def process_item(yahoo, db, notifier, item_id, keyword):
     """
     处理一个新商品。
 
-    只有商品详情获取成功、Telegram 推送成功后，
-    才会把商品保存到数据库。
+    命中标题屏蔽词的商品不会推送，但会保存到数据库，
+    避免后续每一轮重复处理同一个商品。
     """
 
     try:
         logger.info(f"[{keyword}] NEW {item_id}")
 
         item = yahoo.get_item(item_id)
+        blocked_keyword = title_has_blocked_keyword(item.title)
+
+        if blocked_keyword is not None:
+            db.save(item, keyword)
+            logger.info(
+                f"[{keyword}] 已忽略 {item.id} | "
+                f"Blocked={blocked_keyword} | "
+                f"Title={item.title}"
+            )
+
+            return "ignored"
 
         notifier.send_item(item, keyword)
         db.save(item, keyword)
@@ -37,7 +59,7 @@ def process_item(yahoo, db, notifier, item_id, keyword):
             f"[{keyword}] 已推送并保存 {item.id}"
         )
 
-        return True
+        return "notified"
 
     except KeyboardInterrupt:
         raise
@@ -48,7 +70,7 @@ def process_item(yahoo, db, notifier, item_id, keyword):
             f"Item={item_id}"
         )
 
-        return False
+        return "failed"
 
 
 def scan_once(yahoo, db, notifier, keyword, scan):
@@ -61,12 +83,13 @@ def scan_once(yahoo, db, notifier, keyword, scan):
     items = yahoo.search(keyword)
     found_count = len(items)
     new_count = 0
+    ignored_count = 0
 
     for item_id in items:
         if db.exists(item_id):
             continue
 
-        saved = process_item(
+        result = process_item(
             yahoo=yahoo,
             db=db,
             notifier=notifier,
@@ -74,8 +97,11 @@ def scan_once(yahoo, db, notifier, keyword, scan):
             keyword=keyword,
         )
 
-        if saved:
+        if result == "notified":
             new_count += 1
+
+        elif result == "ignored":
+            ignored_count += 1
 
     elapsed = time.perf_counter() - start
 
@@ -84,6 +110,7 @@ def scan_once(yahoo, db, notifier, keyword, scan):
         f"Keyword={keyword} | "
         f"Found={found_count} | "
         f"New={new_count} | "
+        f"Ignored={ignored_count} | "
         f"Time={elapsed:.2f}s"
     )
 
@@ -155,8 +182,23 @@ def validate_keywords():
         )
 
 
+def validate_blocked_title_keywords():
+    invalid_keywords = [
+        keyword
+        for keyword in BLOCKED_TITLE_KEYWORDS
+        if not isinstance(keyword, str)
+        or not keyword.strip()
+    ]
+
+    if invalid_keywords:
+        raise ValueError(
+            "BLOCKED_TITLE_KEYWORDS 中存在空白或无效的关键字"
+        )
+
+
 def validate_runtime_config():
     validate_keywords()
+    validate_blocked_title_keywords()
     validate_positive_number(
         "SCAN_INTERVAL",
         SCAN_INTERVAL,
@@ -234,6 +276,7 @@ def main():
         logger.info(
             "Yahoo Monitor 启动 | "
             f"Keywords={len(KEYWORDS)} | "
+            f"BlockedTitleKeywords={len(BLOCKED_TITLE_KEYWORDS)} | "
             f"Interval={SCAN_INTERVAL}s"
         )
 

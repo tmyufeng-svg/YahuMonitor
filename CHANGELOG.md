@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.7.x
+
+### Added
+
+- Title blocked keyword filtering for unwanted items.
+
 ## v0.6.x
 
 ### Added
