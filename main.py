@@ -43,7 +43,6 @@ def process_item(
     notifier,
     item_id,
     keyword,
-    notify_item,
 ):
     """
     处理一个新商品。
@@ -89,20 +88,6 @@ def process_item(
 
             return "ignored"
 
-        if not notify_item:
-            db.save(
-                item=item,
-                keyword=keyword,
-                status="baseline",
-                ignore_reason="startup_baseline",
-            )
-            logger.info(
-                f"[{keyword}] 已加入启动基线 {item.id} | "
-                f"Title={item.title}"
-            )
-
-            return "baseline"
-
         notifier.send_item(item, keyword)
         db.save(
             item=item,
@@ -132,6 +117,22 @@ def should_notify_items(scan):
     return scan > 1 or NOTIFY_EXISTING_ON_STARTUP
 
 
+def save_startup_baseline(yahoo, db, item_id, keyword):
+    item_url = yahoo.build_item_url(item_id)
+
+    db.save_baseline_item_id(
+        item_id=item_id,
+        keyword=keyword,
+        url=item_url,
+    )
+
+    logger.info(
+        f"[{keyword}] 已加入启动基线 {item_id}"
+    )
+
+    return "baseline"
+
+
 def scan_once(yahoo, db, notifier, keyword, scan):
     """
     扫描一个关键词。
@@ -150,14 +151,22 @@ def scan_once(yahoo, db, notifier, keyword, scan):
         if db.exists(item_id):
             continue
 
-        result = process_item(
-            yahoo=yahoo,
-            db=db,
-            notifier=notifier,
-            item_id=item_id,
-            keyword=keyword,
-            notify_item=notify_item,
-        )
+        if not notify_item:
+            result = save_startup_baseline(
+                yahoo=yahoo,
+                db=db,
+                item_id=item_id,
+                keyword=keyword,
+            )
+
+        else:
+            result = process_item(
+                yahoo=yahoo,
+                db=db,
+                notifier=notifier,
+                item_id=item_id,
+                keyword=keyword,
+            )
 
         if result == "notified":
             new_count += 1

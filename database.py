@@ -123,5 +123,38 @@ class Database:
 
         self.conn.commit()
 
+    def save_baseline_item_id(
+        self,
+        item_id,
+        keyword,
+        url,
+    ):
+
+        self.cursor.execute(
+            """
+            INSERT OR IGNORE INTO items(
+                id,
+                keyword,
+                title,
+                price,
+                url,
+                status,
+                ignore_reason
+            )
+            VALUES(?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                item_id,
+                keyword,
+                None,
+                None,
+                url,
+                "baseline",
+                "startup_baseline",
+            )
+        )
+
+        self.conn.commit()
+
     def close(self):
         self.conn.close()
