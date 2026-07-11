@@ -9,12 +9,12 @@ class TelegramNotifier:
     def __init__(self, token, chat_id):
         if not token:
             raise ValueError(
-                "Telegram TOKEN is missing. Check your .env file."
+                "未配置 Telegram TOKEN，请检查 .env 文件"
             )
 
         if not chat_id:
             raise ValueError(
-                "Telegram CHAT_ID is missing. Check your .env file."
+                "未配置 Telegram CHAT_ID，请检查 .env 文件"
             )
 
         self.token = token
@@ -42,7 +42,7 @@ class TelegramNotifier:
         if not result.get("ok"):
             description = result.get(
                 "description",
-                "Telegram returned an unknown error",
+                "Telegram 返回未知错误",
             )
 
             raise RuntimeError(description)
@@ -51,20 +51,20 @@ class TelegramNotifier:
 
     def send_startup_message(self, keyword_count):
         message = (
-            "Yahoo Monitor started successfully\n\n"
-            f"Keywords: {keyword_count}\n"
-            "Telegram connection is healthy"
+            "✅ Yahoo Monitor 启动成功\n\n"
+            f"🔍 监控关键字数量：{keyword_count}\n"
+            "📡 Telegram 推送连接正常"
         )
 
         return self.send(message)
 
     def send_item(self, item, keyword):
         message = (
-            "New Yahoo Flea Market item\n\n"
-            f"Keyword: {keyword}\n\n"
-            f"{item.title}\n"
-            f"Price: {item.price:,} JPY\n\n"
-            f"{item.url}"
+            "🆕 Yahooフリマ 新商品\n\n"
+            f"🔍 关键字：{keyword}\n\n"
+            f"📷 {item.title}\n"
+            f"💴 {item.price:,}円\n\n"
+            f"🔗 {item.url}"
         )
 
         return self.send(message)
