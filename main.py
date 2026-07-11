@@ -150,6 +150,7 @@ def search_candidates(yahoo, keyword):
         {
             "id": item_id,
             "item": None,
+            "parse_error": None,
         }
         for item_id in item_ids
     ]
@@ -198,7 +199,12 @@ def scan_once(yahoo, db, notifier, keyword, scan):
     ignored_count = 0
     baseline_count = 0
     failed_count = 0
+    search_detail_count = 0
+    search_parse_failed_count = 0
+    search_parse_errors = {}
     list_detail_count = 0
+    list_parse_failed_count = 0
+    list_parse_errors = {}
     detail_fetch_count = 0
     notify_item = should_notify_items(scan)
     new_candidates = [
@@ -206,6 +212,19 @@ def scan_once(yahoo, db, notifier, keyword, scan):
         for candidate in candidates
         if candidate["id"] not in existing_ids
     ]
+
+    for candidate in candidates:
+        parse_error = candidate.get("parse_error")
+
+        if candidate["item"] is not None:
+            search_detail_count += 1
+
+        elif parse_error is not None:
+            search_parse_failed_count += 1
+            search_parse_errors[parse_error] = (
+                search_parse_errors.get(parse_error, 0)
+                + 1
+            )
 
     if not notify_item:
         baseline_count = save_startup_baseline_items(
@@ -222,6 +241,14 @@ def scan_once(yahoo, db, notifier, keyword, scan):
         for candidate in new_candidates:
             item_id = candidate["id"]
             listing_item = candidate["item"]
+            parse_error = candidate.get("parse_error")
+
+            if listing_item is None and parse_error is not None:
+                list_parse_failed_count += 1
+                list_parse_errors[parse_error] = (
+                    list_parse_errors.get(parse_error, 0)
+                    + 1
+                )
 
             result = process_item(
                 yahoo=yahoo,
@@ -260,7 +287,12 @@ def scan_once(yahoo, db, notifier, keyword, scan):
         f"Ignored={ignored_count} | "
         f"Baseline={baseline_count} | "
         f"Failed={failed_count} | "
+        f"SearchDetails={search_detail_count} | "
+        f"SearchParseFailed={search_parse_failed_count} | "
+        f"SearchParseErrors={format_error_counts(search_parse_errors)} | "
         f"ListDetails={list_detail_count} | "
+        f"ListParseFailed={list_parse_failed_count} | "
+        f"ListParseErrors={format_error_counts(list_parse_errors)} | "
         f"DetailFetches={detail_fetch_count} | "
         f"Time={elapsed:.2f}s"
     )
@@ -271,7 +303,12 @@ def scan_once(yahoo, db, notifier, keyword, scan):
         "ignored": ignored_count,
         "baseline": baseline_count,
         "failed": failed_count,
+        "search_details": search_detail_count,
+        "search_parse_failed": search_parse_failed_count,
+        "search_parse_errors": search_parse_errors,
         "list_details": list_detail_count,
+        "list_parse_failed": list_parse_failed_count,
+        "list_parse_errors": list_parse_errors,
         "detail_fetches": detail_fetch_count,
         "elapsed": elapsed,
     }
@@ -284,7 +321,12 @@ def empty_scan_stats():
         "ignored": 0,
         "baseline": 0,
         "failed": 0,
+        "search_details": 0,
+        "search_parse_failed": 0,
+        "search_parse_errors": {},
         "list_details": 0,
+        "list_parse_failed": 0,
+        "list_parse_errors": {},
         "detail_fetches": 0,
         "elapsed": 0.0,
     }
@@ -292,7 +334,28 @@ def empty_scan_stats():
 
 def add_scan_stats(total_stats, scan_stats):
     for key in total_stats:
-        total_stats[key] += scan_stats[key]
+        if key in {
+            "list_parse_errors",
+            "search_parse_errors",
+        }:
+            for error_name, count in scan_stats[key].items():
+                total_stats[key][error_name] = (
+                    total_stats[key].get(error_name, 0)
+                    + count
+                )
+
+        else:
+            total_stats[key] += scan_stats[key]
+
+
+def format_error_counts(error_counts):
+    if not error_counts:
+        return "None"
+
+    return ",".join(
+        f"{error_name}:{count}"
+        for error_name, count in sorted(error_counts.items())
+    )
 
 
 def log_cycle_summary(scan, keyword_count, cycle_stats):
@@ -304,7 +367,12 @@ def log_cycle_summary(scan, keyword_count, cycle_stats):
         f"Ignored={cycle_stats['ignored']} | "
         f"Baseline={cycle_stats['baseline']} | "
         f"Failed={cycle_stats['failed']} | "
+        f"SearchDetails={cycle_stats['search_details']} | "
+        f"SearchParseFailed={cycle_stats['search_parse_failed']} | "
+        f"SearchParseErrors={format_error_counts(cycle_stats['search_parse_errors'])} | "
         f"ListDetails={cycle_stats['list_details']} | "
+        f"ListParseFailed={cycle_stats['list_parse_failed']} | "
+        f"ListParseErrors={format_error_counts(cycle_stats['list_parse_errors'])} | "
         f"DetailFetches={cycle_stats['detail_fetches']} | "
         f"Time={cycle_stats['elapsed']:.2f}s"
     )
@@ -320,7 +388,12 @@ def log_runtime_summary(scan, uptime, runtime_stats):
         f"Ignored={runtime_stats['ignored']} | "
         f"Baseline={runtime_stats['baseline']} | "
         f"Failed={runtime_stats['failed']} | "
+        f"SearchDetails={runtime_stats['search_details']} | "
+        f"SearchParseFailed={runtime_stats['search_parse_failed']} | "
+        f"SearchParseErrors={format_error_counts(runtime_stats['search_parse_errors'])} | "
         f"ListDetails={runtime_stats['list_details']} | "
+        f"ListParseFailed={runtime_stats['list_parse_failed']} | "
+        f"ListParseErrors={format_error_counts(runtime_stats['list_parse_errors'])} | "
         f"DetailFetches={runtime_stats['detail_fetches']} | "
         f"ScanTime={runtime_stats['elapsed']:.2f}s"
     )

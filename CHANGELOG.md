@@ -6,6 +6,8 @@
 
 - Optional search-result item detail parsing to reduce detail page visits.
 - Scan logs for list-page detail usage and detail-page fallback counts.
+- List-page parse failure counts in scan, cycle, and runtime logs.
+- Search-result parse coverage counts even when all listings already exist in the database.
 
 ## v0.7.x
 

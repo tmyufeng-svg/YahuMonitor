@@ -100,6 +100,7 @@ class YahooScraper:
             seen.add(item_id)
 
             item = None
+            parse_error = None
 
             try:
                 item = self.parse_search_item(
@@ -107,13 +108,15 @@ class YahooScraper:
                     item_id=item_id,
                 )
 
-            except Exception:
+            except Exception as error:
                 item = None
+                parse_error = error.__class__.__name__
 
             candidates.append(
                 {
                     "id": item_id,
                     "item": item,
+                    "parse_error": parse_error,
                 }
             )
 
