@@ -244,6 +244,20 @@ def log_cycle_summary(scan, keyword_count, cycle_stats):
     )
 
 
+def log_runtime_summary(scan, uptime, runtime_stats):
+    logger.info(
+        f"运行统计 | "
+        f"Scans={scan} | "
+        f"Uptime={uptime} | "
+        f"Found={runtime_stats['found']} | "
+        f"New={runtime_stats['new']} | "
+        f"Ignored={runtime_stats['ignored']} | "
+        f"Baseline={runtime_stats['baseline']} | "
+        f"Failed={runtime_stats['failed']} | "
+        f"ScanTime={runtime_stats['elapsed']:.2f}s"
+    )
+
+
 def close_database(db):
     """
     安全关闭数据库。
@@ -413,6 +427,7 @@ def main():
     db = None
     browser_manager = None
     scan = 0
+    runtime_stats = empty_scan_stats()
     started_at = time.perf_counter()
 
     try:
@@ -478,11 +493,17 @@ def main():
                             scan_stats,
                         )
 
+                        add_scan_stats(
+                            runtime_stats,
+                            scan_stats,
+                        )
+
                     except KeyboardInterrupt:
                         raise
 
                     except Exception:
                         cycle_stats["failed"] += 1
+                        runtime_stats["failed"] += 1
                         logger.exception(
                             "关键词扫描失败 | "
                             f"Scan=#{scan} | "
@@ -556,8 +577,10 @@ def main():
             time.perf_counter() - started_at
         )
 
-        logger.info(
-            f"运行统计 | Scans={scan} | Uptime={uptime}"
+        log_runtime_summary(
+            scan=scan,
+            uptime=uptime,
+            runtime_stats=runtime_stats,
         )
 
         if browser_manager is not None:
