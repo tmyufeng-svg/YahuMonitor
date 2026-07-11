@@ -7,10 +7,13 @@
 - Title blocked keyword filtering for unwanted items.
 - Optional maximum price filtering.
 - Stored item status and ignore reason in SQLite.
+- `SEARCH_RESULT_LIMIT` to cap checked search results per keyword and speed up scans.
+- Scan logs now include checked and skipped counts.
 
 ### Changed
 
 - Replaced default blocked title keywords with a neutral placeholder.
+- Cleaned runtime log messages and source text encoding.
 
 ## v0.6.x
 

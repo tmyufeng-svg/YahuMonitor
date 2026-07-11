@@ -28,19 +28,25 @@ SCAN_INTERVAL = 2
 ERROR_RETRY_INTERVAL = 5
 MAX_BROWSER_RESTARTS_PER_SCAN = 2
 
+# Limit how many unique search results are inspected per keyword per scan.
+# Lower values make scans faster and focus on newly listed items near the top.
+# Use None to inspect all loaded search results.
+SEARCH_RESULT_LIMIT = 20
 
-# Yahoo 搜索关键字
+
+# Yahoo search keywords
 KEYWORDS = [
     "Contax T3",
     "Nikon L35AF",
 ]
 
 
-# 标题屏蔽词
+# Title keywords to ignore.
+# Do not add default junk-camera words here; those may be target items.
 BLOCKED_TITLE_KEYWORDS = [
-    "サンプル除外ワード",
+    "sample-block-word",
 ]
 
 
-# 价格上限。None 表示不启用价格过滤。
+# Optional maximum item price. Use None to disable price filtering.
 MAX_PRICE = None

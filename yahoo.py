@@ -37,15 +37,14 @@ class YahooScraper:
         return item_id
 
     def parse_price(self, text):
-        match = re.search(r"([\d,]+)円", text)
+        match = re.search(r"([\d,]+)\s*\u5186", text)
 
         if match is None:
-            raise ValueError("商品价格解析失败")
+            raise ValueError("Failed to parse item price")
 
         return int(match.group(1).replace(",", ""))
 
-    def search(self, keyword):
-
+    def search(self, keyword, limit=None):
         self.page.goto(
             self.build_search_url(keyword),
             wait_until="domcontentloaded",
@@ -69,10 +68,12 @@ class YahooScraper:
             seen.add(item_id)
             items.append(item_id)
 
+            if limit is not None and len(items) >= limit:
+                break
+
         return items
 
     def get_item(self, item_id):
-
         url = self.build_item_url(item_id)
 
         self.page.goto(
@@ -89,5 +90,5 @@ class YahooScraper:
             id=item_id,
             title=title,
             price=price,
-            url=url
+            url=url,
         )

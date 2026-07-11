@@ -11,6 +11,7 @@ from config import (
     BLOCKED_TITLE_KEYWORDS,
     MAX_PRICE,
     MAX_BROWSER_RESTARTS_PER_SCAN,
+    SEARCH_RESULT_LIMIT,
     SEND_STARTUP_MESSAGE,
 )
 from database import Database
@@ -38,10 +39,10 @@ def item_exceeds_max_price(item):
 
 def process_item(yahoo, db, notifier, item_id, keyword):
     """
-    处理一个新商品。
+    Process one unseen item.
 
-    命中过滤条件的商品不会推送，但会保存到数据库，
-    避免后续每一轮重复处理同一个商品。
+    Filtered items are saved to the database too, so they are not
+    reprocessed on every later scan.
     """
 
     try:
@@ -58,7 +59,7 @@ def process_item(yahoo, db, notifier, item_id, keyword):
                 ignore_reason=f"title:{blocked_keyword}",
             )
             logger.info(
-                f"[{keyword}] 已忽略 {item.id} | "
+                f"[{keyword}] ignored {item.id} | "
                 f"Blocked={blocked_keyword} | "
                 f"Title={item.title}"
             )
@@ -73,7 +74,7 @@ def process_item(yahoo, db, notifier, item_id, keyword):
                 ignore_reason=f"price>{MAX_PRICE}",
             )
             logger.info(
-                f"[{keyword}] 已忽略 {item.id} | "
+                f"[{keyword}] ignored {item.id} | "
                 f"Price={item.price:,} | "
                 f"MaxPrice={MAX_PRICE:,} | "
                 f"Title={item.title}"
@@ -88,9 +89,7 @@ def process_item(yahoo, db, notifier, item_id, keyword):
             status="notified",
         )
 
-        logger.info(
-            f"[{keyword}] 已推送并保存 {item.id}"
-        )
+        logger.info(f"[{keyword}] notified and saved {item.id}")
 
         return "notified"
 
@@ -99,7 +98,7 @@ def process_item(yahoo, db, notifier, item_id, keyword):
 
     except Exception:
         logger.exception(
-            f"[{keyword}] 商品处理失败 | "
+            f"[{keyword}] item processing failed | "
             f"Item={item_id}"
         )
 
@@ -107,19 +106,20 @@ def process_item(yahoo, db, notifier, item_id, keyword):
 
 
 def scan_once(yahoo, db, notifier, keyword, scan):
-    """
-    扫描一个关键词。
-    """
-
     start = time.perf_counter()
 
-    items = yahoo.search(keyword)
+    items = yahoo.search(
+        keyword=keyword,
+        limit=SEARCH_RESULT_LIMIT,
+    )
     found_count = len(items)
     new_count = 0
     ignored_count = 0
+    skipped_count = 0
 
     for item_id in items:
         if db.exists(item_id):
+            skipped_count += 1
             continue
 
         result = process_item(
@@ -141,29 +141,25 @@ def scan_once(yahoo, db, notifier, keyword, scan):
     logger.info(
         f"Scan #{scan} | "
         f"Keyword={keyword} | "
-        f"Found={found_count} | "
+        f"Checked={found_count} | "
+        f"Skipped={skipped_count} | "
         f"New={new_count} | "
         f"Ignored={ignored_count} | "
+        f"Limit={SEARCH_RESULT_LIMIT} | "
         f"Time={elapsed:.2f}s"
     )
 
 
 def close_database(db):
-    """
-    安全关闭数据库。
-    """
-
     if db is None:
         return
 
     try:
         db.close()
-        logger.info("Database 已关闭")
+        logger.info("Database closed")
 
     except Exception as error:
-        logger.warning(
-            f"Database 关闭失败：{error}"
-        )
+        logger.warning(f"Database close failed: {error}")
 
 
 def format_duration(seconds):
@@ -177,10 +173,10 @@ def format_duration(seconds):
 
 def validate_positive_number(name, value):
     if not isinstance(value, (int, float)):
-        raise ValueError(f"{name} 必须是数字")
+        raise ValueError(f"{name} must be a number")
 
     if value <= 0:
-        raise ValueError(f"{name} 必须大于 0")
+        raise ValueError(f"{name} must be greater than 0")
 
 
 def validate_optional_positive_integer(name, value):
@@ -188,29 +184,24 @@ def validate_optional_positive_integer(name, value):
         return
 
     if not isinstance(value, int):
-        raise ValueError(f"{name} 必须是整数或 None")
+        raise ValueError(f"{name} must be an integer or None")
 
     if value <= 0:
-        raise ValueError(f"{name} 必须大于 0")
+        raise ValueError(f"{name} must be greater than 0")
 
 
 def validate_non_negative_integer(name, value):
     if not isinstance(value, int):
-        raise ValueError(f"{name} 必须是整数")
+        raise ValueError(f"{name} must be an integer")
 
     if value < 0:
-        raise ValueError(f"{name} 不能小于 0")
+        raise ValueError(f"{name} must not be less than 0")
 
 
 def validate_keywords():
-    """
-    检查关键字配置。
-    """
-
     if not KEYWORDS:
         raise ValueError(
-            "KEYWORDS 不能为空，请在 config.py 中"
-            "至少设置一个搜索关键字"
+            "KEYWORDS cannot be empty. Set at least one keyword in config.py."
         )
 
     invalid_keywords = [
@@ -222,7 +213,7 @@ def validate_keywords():
 
     if invalid_keywords:
         raise ValueError(
-            "KEYWORDS 中存在空白或无效的关键字"
+            "KEYWORDS contains empty or invalid keywords"
         )
 
 
@@ -236,7 +227,7 @@ def validate_blocked_title_keywords():
 
     if invalid_keywords:
         raise ValueError(
-            "BLOCKED_TITLE_KEYWORDS 中存在空白或无效的关键字"
+            "BLOCKED_TITLE_KEYWORDS contains empty or invalid keywords"
         )
 
 
@@ -259,30 +250,30 @@ def validate_runtime_config():
         "MAX_PRICE",
         MAX_PRICE,
     )
+    validate_optional_positive_integer(
+        "SEARCH_RESULT_LIMIT",
+        SEARCH_RESULT_LIMIT,
+    )
 
     if not isinstance(DATABASE_NAME, str) or not DATABASE_NAME:
-        raise ValueError("DATABASE_NAME 不能为空")
+        raise ValueError("DATABASE_NAME cannot be empty")
 
 
 def send_startup_check(notifier):
     if not SEND_STARTUP_MESSAGE:
-        logger.info("已跳过 Telegram 启动测试消息")
+        logger.info("Skipped Telegram startup test message")
         return
 
-    logger.info("正在测试 Telegram 推送连接")
+    logger.info("Testing Telegram connection")
 
     notifier.send_startup_message(
         keyword_count=len(KEYWORDS)
     )
 
-    logger.info("Telegram 推送连接正常")
+    logger.info("Telegram connection is healthy")
 
 
 def rebuild_scraper(browser_manager):
-    """
-    重启 Browser，并基于新的 Page 创建 YahooScraper。
-    """
-
     page = browser_manager.restart()
 
     return YahooScraper(page)
@@ -304,7 +295,7 @@ def main():
         db = Database(DATABASE_NAME)
 
         logger.info(
-            f"Database 已连接 | "
+            f"Database connected | "
             f"File={DATABASE_NAME} | "
             f"Items={db.count_items()}"
         )
@@ -322,10 +313,11 @@ def main():
         yahoo = YahooScraper(page)
 
         logger.info(
-            "Yahoo Monitor 启动 | "
+            "Yahoo Monitor started | "
             f"Keywords={len(KEYWORDS)} | "
             f"BlockedTitleKeywords={len(BLOCKED_TITLE_KEYWORDS)} | "
             f"MaxPrice={MAX_PRICE} | "
+            f"SearchResultLimit={SEARCH_RESULT_LIMIT} | "
             f"Interval={SCAN_INTERVAL}s"
         )
 
@@ -349,7 +341,7 @@ def main():
 
                     except Exception:
                         logger.exception(
-                            "关键词扫描失败 | "
+                            "Keyword scan failed | "
                             f"Scan=#{scan} | "
                             f"Keyword={keyword}"
                         )
@@ -358,8 +350,8 @@ def main():
                             restart_count
                         ):
                             logger.warning(
-                                "本轮 Browser 重启次数已达上限，"
-                                "跳过剩余关键词"
+                                "Browser restart limit reached for this scan; "
+                                "skipping remaining keywords"
                             )
                             break
 
@@ -376,9 +368,8 @@ def main():
 
             except Exception:
                 logger.exception(
-                    "扫描循环发生异常，将在 "
-                    f"{ERROR_RETRY_INTERVAL} "
-                    "秒后继续"
+                    "Scan loop failed; retrying after "
+                    f"{ERROR_RETRY_INTERVAL} seconds"
                 )
 
                 time.sleep(
@@ -389,8 +380,8 @@ def main():
                     restart_count
                 ):
                     logger.warning(
-                        "本轮 Browser 重启次数已达上限，"
-                        "等待下一轮再尝试"
+                        "Browser restart limit reached for this scan; "
+                        "waiting for the next scan"
                     )
                     continue
 
@@ -401,14 +392,10 @@ def main():
                 )
 
     except KeyboardInterrupt:
-        logger.info(
-            "收到停止指令，正在关闭监控"
-        )
+        logger.info("Stop requested; shutting down monitor")
 
     except Exception:
-        logger.exception(
-            "Yahoo Monitor 启动或运行失败"
-        )
+        logger.exception("Yahoo Monitor failed")
 
     finally:
         uptime = format_duration(
@@ -416,14 +403,14 @@ def main():
         )
 
         logger.info(
-            f"运行统计 | Scans={scan} | Uptime={uptime}"
+            f"Runtime summary | Scans={scan} | Uptime={uptime}"
         )
 
         if browser_manager is not None:
             browser_manager.stop()
 
         close_database(db)
-        logger.info("Yahoo Monitor 已停止")
+        logger.info("Yahoo Monitor stopped")
 
 
 if __name__ == "__main__":
