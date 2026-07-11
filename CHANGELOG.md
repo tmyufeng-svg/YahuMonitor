@@ -13,6 +13,7 @@
 - Batched duplicate checks for each scan to reduce SQLite queries.
 - Batched startup baseline inserts into a single SQLite transaction per keyword.
 - SQLite WAL mode, busy timeout, and common indexes for steadier long-running scans.
+- Per-cycle scan summaries with total found, new, ignored, baseline, failed, and elapsed counts.
 
 ### Changed
 

@@ -154,6 +154,7 @@ def scan_once(yahoo, db, notifier, keyword, scan):
     new_count = 0
     ignored_count = 0
     baseline_count = 0
+    failed_count = 0
     notify_item = should_notify_items(scan)
     new_item_ids = [
         item_id
@@ -188,6 +189,9 @@ def scan_once(yahoo, db, notifier, keyword, scan):
             elif result == "baseline":
                 baseline_count += 1
 
+            elif result == "failed":
+                failed_count += 1
+
     elapsed = time.perf_counter() - start
 
     logger.info(
@@ -197,7 +201,46 @@ def scan_once(yahoo, db, notifier, keyword, scan):
         f"New={new_count} | "
         f"Ignored={ignored_count} | "
         f"Baseline={baseline_count} | "
+        f"Failed={failed_count} | "
         f"Time={elapsed:.2f}s"
+    )
+
+    return {
+        "found": found_count,
+        "new": new_count,
+        "ignored": ignored_count,
+        "baseline": baseline_count,
+        "failed": failed_count,
+        "elapsed": elapsed,
+    }
+
+
+def empty_scan_stats():
+    return {
+        "found": 0,
+        "new": 0,
+        "ignored": 0,
+        "baseline": 0,
+        "failed": 0,
+        "elapsed": 0.0,
+    }
+
+
+def add_scan_stats(total_stats, scan_stats):
+    for key in total_stats:
+        total_stats[key] += scan_stats[key]
+
+
+def log_cycle_summary(scan, keyword_count, cycle_stats):
+    logger.info(
+        f"Cycle #{scan} | "
+        f"Keywords={keyword_count} | "
+        f"Found={cycle_stats['found']} | "
+        f"New={cycle_stats['new']} | "
+        f"Ignored={cycle_stats['ignored']} | "
+        f"Baseline={cycle_stats['baseline']} | "
+        f"Failed={cycle_stats['failed']} | "
+        f"Time={cycle_stats['elapsed']:.2f}s"
     )
 
 
@@ -417,11 +460,12 @@ def main():
         while True:
             scan += 1
             restart_count = 0
+            cycle_stats = empty_scan_stats()
 
             try:
                 for keyword in KEYWORDS:
                     try:
-                        scan_once(
+                        scan_stats = scan_once(
                             yahoo=yahoo,
                             db=db,
                             notifier=notifier,
@@ -429,10 +473,16 @@ def main():
                             scan=scan,
                         )
 
+                        add_scan_stats(
+                            cycle_stats,
+                            scan_stats,
+                        )
+
                     except KeyboardInterrupt:
                         raise
 
                     except Exception:
+                        cycle_stats["failed"] += 1
                         logger.exception(
                             "关键词扫描失败 | "
                             f"Scan=#{scan} | "
@@ -453,6 +503,12 @@ def main():
                         yahoo = rebuild_scraper(
                             browser_manager
                         )
+
+                log_cycle_summary(
+                    scan=scan,
+                    keyword_count=len(KEYWORDS),
+                    cycle_stats=cycle_stats,
+                )
 
                 time.sleep(SCAN_INTERVAL)
 
