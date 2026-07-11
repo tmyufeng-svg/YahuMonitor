@@ -142,13 +142,14 @@ def scan_once(yahoo, db, notifier, keyword, scan):
 
     items = yahoo.search(keyword)
     found_count = len(items)
+    existing_ids = db.get_existing_ids(items)
     new_count = 0
     ignored_count = 0
     baseline_count = 0
     notify_item = should_notify_items(scan)
 
     for item_id in items:
-        if db.exists(item_id):
+        if item_id in existing_ids:
             continue
 
         if not notify_item:

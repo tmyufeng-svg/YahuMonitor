@@ -10,6 +10,7 @@
 - Startup database status counts for notified, ignored, and baseline items.
 - Startup baseline mode to avoid notifying all existing listings on a fresh database.
 - Fast startup baseline seeding without opening every item detail page.
+- Batched duplicate checks for each scan to reduce SQLite queries.
 
 ### Changed
 

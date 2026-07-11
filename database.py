@@ -60,6 +60,29 @@ class Database:
 
         return self.cursor.fetchone() is not None
 
+    def get_existing_ids(self, item_ids):
+        if not item_ids:
+            return set()
+
+        placeholders = ", ".join(
+            "?"
+            for _ in item_ids
+        )
+
+        self.cursor.execute(
+            f"""
+            SELECT id
+            FROM items
+            WHERE id IN ({placeholders})
+            """,
+            tuple(item_ids),
+        )
+
+        return {
+            row[0]
+            for row in self.cursor.fetchall()
+        }
+
     def count_items(self):
 
         self.cursor.execute("SELECT COUNT(*) FROM items")
