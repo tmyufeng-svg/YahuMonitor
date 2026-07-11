@@ -12,6 +12,7 @@ from config import (
     MAX_PRICE,
     MAX_BROWSER_RESTARTS_PER_SCAN,
     SEND_STARTUP_MESSAGE,
+    NOTIFY_EXISTING_ON_STARTUP,
 )
 from database import Database
 from logger import logger
@@ -36,7 +37,14 @@ def item_exceeds_max_price(item):
     return item.price > MAX_PRICE
 
 
-def process_item(yahoo, db, notifier, item_id, keyword):
+def process_item(
+    yahoo,
+    db,
+    notifier,
+    item_id,
+    keyword,
+    notify_item,
+):
     """
     处理一个新商品。
 
@@ -81,6 +89,20 @@ def process_item(yahoo, db, notifier, item_id, keyword):
 
             return "ignored"
 
+        if not notify_item:
+            db.save(
+                item=item,
+                keyword=keyword,
+                status="baseline",
+                ignore_reason="startup_baseline",
+            )
+            logger.info(
+                f"[{keyword}] 已加入启动基线 {item.id} | "
+                f"Title={item.title}"
+            )
+
+            return "baseline"
+
         notifier.send_item(item, keyword)
         db.save(
             item=item,
@@ -106,6 +128,10 @@ def process_item(yahoo, db, notifier, item_id, keyword):
         return "failed"
 
 
+def should_notify_items(scan):
+    return scan > 1 or NOTIFY_EXISTING_ON_STARTUP
+
+
 def scan_once(yahoo, db, notifier, keyword, scan):
     """
     扫描一个关键词。
@@ -117,6 +143,8 @@ def scan_once(yahoo, db, notifier, keyword, scan):
     found_count = len(items)
     new_count = 0
     ignored_count = 0
+    baseline_count = 0
+    notify_item = should_notify_items(scan)
 
     for item_id in items:
         if db.exists(item_id):
@@ -128,6 +156,7 @@ def scan_once(yahoo, db, notifier, keyword, scan):
             notifier=notifier,
             item_id=item_id,
             keyword=keyword,
+            notify_item=notify_item,
         )
 
         if result == "notified":
@@ -135,6 +164,9 @@ def scan_once(yahoo, db, notifier, keyword, scan):
 
         elif result == "ignored":
             ignored_count += 1
+
+        elif result == "baseline":
+            baseline_count += 1
 
     elapsed = time.perf_counter() - start
 
@@ -144,6 +176,7 @@ def scan_once(yahoo, db, notifier, keyword, scan):
         f"Found={found_count} | "
         f"New={new_count} | "
         f"Ignored={ignored_count} | "
+        f"Baseline={baseline_count} | "
         f"Time={elapsed:.2f}s"
     )
 
@@ -173,6 +206,11 @@ def format_duration(seconds):
     seconds = total_seconds % 60
 
     return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+
+
+def validate_boolean(name, value):
+    if not isinstance(value, bool):
+        raise ValueError(f"{name} 必须是 True 或 False")
 
 
 def validate_positive_number(name, value):
@@ -243,6 +281,14 @@ def validate_blocked_title_keywords():
 def validate_runtime_config():
     validate_keywords()
     validate_blocked_title_keywords()
+    validate_boolean(
+        "SEND_STARTUP_MESSAGE",
+        SEND_STARTUP_MESSAGE,
+    )
+    validate_boolean(
+        "NOTIFY_EXISTING_ON_STARTUP",
+        NOTIFY_EXISTING_ON_STARTUP,
+    )
     validate_positive_number(
         "SCAN_INTERVAL",
         SCAN_INTERVAL,
@@ -309,7 +355,8 @@ def main():
             f"File={DATABASE_NAME} | "
             f"Items={item_counts['total']} | "
             f"Notified={item_counts['notified']} | "
-            f"Ignored={item_counts['ignored']}"
+            f"Ignored={item_counts['ignored']} | "
+            f"Baseline={item_counts['baseline']}"
         )
 
         notifier = TelegramNotifier(
@@ -329,6 +376,7 @@ def main():
             f"Keywords={len(KEYWORDS)} | "
             f"BlockedTitleKeywords={len(BLOCKED_TITLE_KEYWORDS)} | "
             f"MaxPrice={MAX_PRICE} | "
+            f"NotifyExistingOnStartup={NOTIFY_EXISTING_ON_STARTUP} | "
             f"Interval={SCAN_INTERVAL}s"
         )
 

@@ -72,6 +72,7 @@ class Database:
             "total": self.count_items(),
             "notified": 0,
             "ignored": 0,
+            "baseline": 0,
         }
 
         self.cursor.execute(
