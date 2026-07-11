@@ -258,6 +258,28 @@ def log_runtime_summary(scan, uptime, runtime_stats):
     )
 
 
+def log_keyword_database_counts(db):
+    keyword_counts = db.count_items_by_keyword()
+
+    if not keyword_counts:
+        logger.info("Keyword 数据统计 | 暂无历史商品")
+        return
+
+    for keyword in sorted(keyword_counts):
+        counts = keyword_counts[keyword]
+        display_keyword = keyword or "(未记录关键字)"
+
+        logger.info(
+            f"Keyword 数据统计 | "
+            f"Keyword={display_keyword} | "
+            f"Items={counts['total']} | "
+            f"Notified={counts['notified']} | "
+            f"Ignored={counts['ignored']} | "
+            f"Baseline={counts['baseline']} | "
+            f"Other={counts['other']}"
+        )
+
+
 def close_database(db):
     """
     安全关闭数据库。
@@ -450,6 +472,8 @@ def main():
             f"Ignored={item_counts['ignored']} | "
             f"Baseline={item_counts['baseline']}"
         )
+
+        log_keyword_database_counts(db)
 
         notifier = TelegramNotifier(
             token=TOKEN,

@@ -161,6 +161,44 @@ class Database:
 
         return counts
 
+    def count_items_by_keyword(self):
+
+        counts = {}
+
+        self.cursor.execute(
+            """
+            SELECT
+                keyword,
+                status,
+                COUNT(*)
+            FROM items
+            GROUP BY keyword, status
+            """
+        )
+
+        for keyword, status, count in self.cursor.fetchall():
+            keyword = keyword or ""
+            status = status or ""
+
+            if keyword not in counts:
+                counts[keyword] = {
+                    "total": 0,
+                    "notified": 0,
+                    "ignored": 0,
+                    "baseline": 0,
+                    "other": 0,
+                }
+
+            counts[keyword]["total"] += count
+
+            if status in counts[keyword]:
+                counts[keyword][status] += count
+
+            else:
+                counts[keyword]["other"] += count
+
+        return counts
+
     def save(
         self,
         item,

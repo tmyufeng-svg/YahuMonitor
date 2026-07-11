@@ -15,6 +15,7 @@
 - SQLite WAL mode, busy timeout, and common indexes for steadier long-running scans.
 - Per-cycle scan summaries with total found, new, ignored, baseline, failed, and elapsed counts.
 - Runtime shutdown summary with cumulative found, new, ignored, baseline, failed, and scan time totals.
+- Startup database counts grouped by keyword and item status.
 
 ### Changed
 
