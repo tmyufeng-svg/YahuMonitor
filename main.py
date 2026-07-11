@@ -51,7 +51,12 @@ def process_item(yahoo, db, notifier, item_id, keyword):
         blocked_keyword = title_has_blocked_keyword(item.title)
 
         if blocked_keyword is not None:
-            db.save(item, keyword)
+            db.save(
+                item=item,
+                keyword=keyword,
+                status="ignored",
+                ignore_reason=f"title:{blocked_keyword}",
+            )
             logger.info(
                 f"[{keyword}] 已忽略 {item.id} | "
                 f"Blocked={blocked_keyword} | "
@@ -61,7 +66,12 @@ def process_item(yahoo, db, notifier, item_id, keyword):
             return "ignored"
 
         if item_exceeds_max_price(item):
-            db.save(item, keyword)
+            db.save(
+                item=item,
+                keyword=keyword,
+                status="ignored",
+                ignore_reason=f"price>{MAX_PRICE}",
+            )
             logger.info(
                 f"[{keyword}] 已忽略 {item.id} | "
                 f"Price={item.price:,} | "
@@ -72,7 +82,11 @@ def process_item(yahoo, db, notifier, item_id, keyword):
             return "ignored"
 
         notifier.send_item(item, keyword)
-        db.save(item, keyword)
+        db.save(
+            item=item,
+            keyword=keyword,
+            status="notified",
+        )
 
         logger.info(
             f"[{keyword}] 已推送并保存 {item.id}"

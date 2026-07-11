@@ -17,6 +17,8 @@ class Database:
                 title TEXT,
                 price INTEGER,
                 url TEXT,
+                status TEXT,
+                ignore_reason TEXT,
                 first_seen TEXT DEFAULT CURRENT_TIMESTAMP
             )
             """
@@ -26,6 +28,8 @@ class Database:
         self._ensure_column("title", "TEXT")
         self._ensure_column("price", "INTEGER")
         self._ensure_column("url", "TEXT")
+        self._ensure_column("status", "TEXT")
+        self._ensure_column("ignore_reason", "TEXT")
         self._ensure_column("first_seen", "TEXT")
 
         self.conn.commit()
@@ -62,7 +66,13 @@ class Database:
 
         return self.cursor.fetchone()[0]
 
-    def save(self, item, keyword):
+    def save(
+        self,
+        item,
+        keyword,
+        status="notified",
+        ignore_reason=None,
+    ):
 
         self.cursor.execute(
             """
@@ -71,9 +81,11 @@ class Database:
                 keyword,
                 title,
                 price,
-                url
+                url,
+                status,
+                ignore_reason
             )
-            VALUES(?, ?, ?, ?, ?)
+            VALUES(?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 item.id,
@@ -81,6 +93,8 @@ class Database:
                 item.title,
                 item.price,
                 item.url,
+                status,
+                ignore_reason,
             )
         )
 

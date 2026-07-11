@@ -6,6 +6,7 @@
 
 - Title blocked keyword filtering for unwanted items.
 - Optional maximum price filtering.
+- Stored item status and ignore reason in SQLite.
 
 ### Changed
 
