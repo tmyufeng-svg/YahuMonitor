@@ -66,6 +66,28 @@ class Database:
 
         return self.cursor.fetchone()[0]
 
+    def count_items_by_status(self):
+
+        counts = {
+            "total": self.count_items(),
+            "notified": 0,
+            "ignored": 0,
+        }
+
+        self.cursor.execute(
+            """
+            SELECT status, COUNT(*)
+            FROM items
+            GROUP BY status
+            """
+        )
+
+        for status, count in self.cursor.fetchall():
+            if status in counts:
+                counts[status] = count
+
+        return counts
+
     def save(
         self,
         item,

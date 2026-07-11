@@ -302,11 +302,14 @@ def main():
         validate_runtime_config()
 
         db = Database(DATABASE_NAME)
+        item_counts = db.count_items_by_status()
 
         logger.info(
             f"Database 已连接 | "
             f"File={DATABASE_NAME} | "
-            f"Items={db.count_items()}"
+            f"Items={item_counts['total']} | "
+            f"Notified={item_counts['notified']} | "
+            f"Ignored={item_counts['ignored']}"
         )
 
         notifier = TelegramNotifier(
