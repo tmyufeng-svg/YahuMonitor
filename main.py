@@ -15,6 +15,7 @@ from config import (
     MAX_BROWSER_RESTARTS_PER_SCAN,
     SEND_STARTUP_MESSAGE,
     NOTIFY_EXISTING_ON_STARTUP,
+    USE_SEARCH_RESULT_ITEM_DETAILS,
 )
 from database import Database
 from logger import logger
@@ -45,6 +46,7 @@ def process_item(
     notifier,
     item_id,
     keyword,
+    listing_item=None,
 ):
     """
     处理一个新商品。
@@ -53,10 +55,17 @@ def process_item(
     避免后续每一轮重复处理同一个商品。
     """
 
+    detail_fetched = listing_item is None
+
     try:
         logger.info(f"[{keyword}] NEW {item_id}")
 
-        item = yahoo.get_item(item_id)
+        if listing_item is None:
+            item = yahoo.get_item(item_id)
+
+        else:
+            item = listing_item
+
         blocked_keyword = title_has_blocked_keyword(item.title)
 
         if blocked_keyword is not None:
@@ -72,7 +81,10 @@ def process_item(
                 f"Title={item.title}"
             )
 
-            return "ignored"
+            return {
+                "status": "ignored",
+                "detail_fetched": detail_fetched,
+            }
 
         if item_exceeds_max_price(item):
             db.save(
@@ -88,7 +100,10 @@ def process_item(
                 f"Title={item.title}"
             )
 
-            return "ignored"
+            return {
+                "status": "ignored",
+                "detail_fetched": detail_fetched,
+            }
 
         notifier.send_item(item, keyword)
         db.save(
@@ -101,7 +116,10 @@ def process_item(
             f"[{keyword}] 已推送并保存 {item.id}"
         )
 
-        return "notified"
+        return {
+            "status": "notified",
+            "detail_fetched": detail_fetched,
+        }
 
     except KeyboardInterrupt:
         raise
@@ -112,11 +130,29 @@ def process_item(
             f"Item={item_id}"
         )
 
-        return "failed"
+        return {
+            "status": "failed",
+            "detail_fetched": detail_fetched,
+        }
 
 
 def should_notify_items(scan):
     return scan > 1 or NOTIFY_EXISTING_ON_STARTUP
+
+
+def search_candidates(yahoo, keyword):
+    if USE_SEARCH_RESULT_ITEM_DETAILS:
+        return yahoo.search_candidates(keyword)
+
+    item_ids = yahoo.search(keyword)
+
+    return [
+        {
+            "id": item_id,
+            "item": None,
+        }
+        for item_id in item_ids
+    ]
 
 
 def save_startup_baseline_items(yahoo, db, item_ids, keyword):
@@ -148,48 +184,70 @@ def scan_once(yahoo, db, notifier, keyword, scan):
 
     start = time.perf_counter()
 
-    items = yahoo.search(keyword)
-    found_count = len(items)
-    existing_ids = db.get_existing_ids(items)
+    candidates = search_candidates(
+        yahoo=yahoo,
+        keyword=keyword,
+    )
+    item_ids = [
+        candidate["id"]
+        for candidate in candidates
+    ]
+    found_count = len(candidates)
+    existing_ids = db.get_existing_ids(item_ids)
     new_count = 0
     ignored_count = 0
     baseline_count = 0
     failed_count = 0
+    list_detail_count = 0
+    detail_fetch_count = 0
     notify_item = should_notify_items(scan)
-    new_item_ids = [
-        item_id
-        for item_id in items
-        if item_id not in existing_ids
+    new_candidates = [
+        candidate
+        for candidate in candidates
+        if candidate["id"] not in existing_ids
     ]
 
     if not notify_item:
         baseline_count = save_startup_baseline_items(
             yahoo=yahoo,
             db=db,
-            item_ids=new_item_ids,
+            item_ids=[
+                candidate["id"]
+                for candidate in new_candidates
+            ],
             keyword=keyword,
         )
 
     else:
-        for item_id in new_item_ids:
+        for candidate in new_candidates:
+            item_id = candidate["id"]
+            listing_item = candidate["item"]
+
             result = process_item(
                 yahoo=yahoo,
                 db=db,
                 notifier=notifier,
                 item_id=item_id,
                 keyword=keyword,
+                listing_item=listing_item,
             )
 
-            if result == "notified":
+            if result["detail_fetched"]:
+                detail_fetch_count += 1
+
+            elif listing_item is not None:
+                list_detail_count += 1
+
+            if result["status"] == "notified":
                 new_count += 1
 
-            elif result == "ignored":
+            elif result["status"] == "ignored":
                 ignored_count += 1
 
-            elif result == "baseline":
+            elif result["status"] == "baseline":
                 baseline_count += 1
 
-            elif result == "failed":
+            elif result["status"] == "failed":
                 failed_count += 1
 
     elapsed = time.perf_counter() - start
@@ -202,6 +260,8 @@ def scan_once(yahoo, db, notifier, keyword, scan):
         f"Ignored={ignored_count} | "
         f"Baseline={baseline_count} | "
         f"Failed={failed_count} | "
+        f"ListDetails={list_detail_count} | "
+        f"DetailFetches={detail_fetch_count} | "
         f"Time={elapsed:.2f}s"
     )
 
@@ -211,6 +271,8 @@ def scan_once(yahoo, db, notifier, keyword, scan):
         "ignored": ignored_count,
         "baseline": baseline_count,
         "failed": failed_count,
+        "list_details": list_detail_count,
+        "detail_fetches": detail_fetch_count,
         "elapsed": elapsed,
     }
 
@@ -222,6 +284,8 @@ def empty_scan_stats():
         "ignored": 0,
         "baseline": 0,
         "failed": 0,
+        "list_details": 0,
+        "detail_fetches": 0,
         "elapsed": 0.0,
     }
 
@@ -240,6 +304,8 @@ def log_cycle_summary(scan, keyword_count, cycle_stats):
         f"Ignored={cycle_stats['ignored']} | "
         f"Baseline={cycle_stats['baseline']} | "
         f"Failed={cycle_stats['failed']} | "
+        f"ListDetails={cycle_stats['list_details']} | "
+        f"DetailFetches={cycle_stats['detail_fetches']} | "
         f"Time={cycle_stats['elapsed']:.2f}s"
     )
 
@@ -254,6 +320,8 @@ def log_runtime_summary(scan, uptime, runtime_stats):
         f"Ignored={runtime_stats['ignored']} | "
         f"Baseline={runtime_stats['baseline']} | "
         f"Failed={runtime_stats['failed']} | "
+        f"ListDetails={runtime_stats['list_details']} | "
+        f"DetailFetches={runtime_stats['detail_fetches']} | "
         f"ScanTime={runtime_stats['elapsed']:.2f}s"
     )
 
@@ -389,6 +457,10 @@ def validate_runtime_config():
         NOTIFY_EXISTING_ON_STARTUP,
     )
     validate_boolean(
+        "USE_SEARCH_RESULT_ITEM_DETAILS",
+        USE_SEARCH_RESULT_ITEM_DETAILS,
+    )
+    validate_boolean(
         "DATABASE_ENABLE_WAL",
         DATABASE_ENABLE_WAL,
     )
@@ -493,6 +565,7 @@ def main():
             f"BlockedTitleKeywords={len(BLOCKED_TITLE_KEYWORDS)} | "
             f"MaxPrice={MAX_PRICE} | "
             f"NotifyExistingOnStartup={NOTIFY_EXISTING_ON_STARTUP} | "
+            f"UseSearchResultItemDetails={USE_SEARCH_RESULT_ITEM_DETAILS} | "
             f"Interval={SCAN_INTERVAL}s"
         )
 

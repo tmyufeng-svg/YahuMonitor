@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.8.x
+
+### Added
+
+- Optional search-result item detail parsing to reduce detail page visits.
+- Scan logs for list-page detail usage and detail-page fallback counts.
+
 ## v0.7.x
 
 ### Added

@@ -44,6 +44,81 @@ class YahooScraper:
 
         return int(match.group(1).replace(",", ""))
 
+    def parse_title_from_search_text(self, text):
+        lines = [
+            line.strip()
+            for line in text.splitlines()
+            if line.strip()
+        ]
+
+        for line in lines:
+            if "円" in line:
+                continue
+
+            if line in {"送料込み", "送料無料"}:
+                continue
+
+            return line
+
+        raise ValueError("搜索结果标题解析失败")
+
+    def parse_search_item(self, link, item_id):
+        text = link.inner_text(timeout=1000)
+        title = self.parse_title_from_search_text(text)
+        price = self.parse_price(text)
+
+        return Item(
+            id=item_id,
+            title=title,
+            price=price,
+            url=self.build_item_url(item_id),
+        )
+
+    def search_candidates(self, keyword):
+
+        self.page.goto(
+            self.build_search_url(keyword),
+            wait_until="domcontentloaded",
+        )
+
+        links = self.page.locator('a[href*="/item/"]')
+
+        candidates = []
+        seen = set()
+
+        for i in range(links.count()):
+            link = links.nth(i)
+            href = link.get_attribute("href")
+            item_id = self.extract_item_id(href)
+
+            if item_id is None:
+                continue
+
+            if item_id in seen:
+                continue
+
+            seen.add(item_id)
+
+            item = None
+
+            try:
+                item = self.parse_search_item(
+                    link=link,
+                    item_id=item_id,
+                )
+
+            except Exception:
+                item = None
+
+            candidates.append(
+                {
+                    "id": item_id,
+                    "item": item,
+                }
+            )
+
+        return candidates
+
     def search(self, keyword):
 
         self.page.goto(
