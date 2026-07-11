@@ -9,6 +9,7 @@ from config import (
     ERROR_RETRY_INTERVAL,
     KEYWORDS,
     BLOCKED_TITLE_KEYWORDS,
+    MAX_PRICE,
     MAX_BROWSER_RESTARTS_PER_SCAN,
     SEND_STARTUP_MESSAGE,
 )
@@ -28,11 +29,18 @@ def title_has_blocked_keyword(title):
     return None
 
 
+def item_exceeds_max_price(item):
+    if MAX_PRICE is None:
+        return False
+
+    return item.price > MAX_PRICE
+
+
 def process_item(yahoo, db, notifier, item_id, keyword):
     """
     处理一个新商品。
 
-    命中标题屏蔽词的商品不会推送，但会保存到数据库，
+    命中过滤条件的商品不会推送，但会保存到数据库，
     避免后续每一轮重复处理同一个商品。
     """
 
@@ -47,6 +55,17 @@ def process_item(yahoo, db, notifier, item_id, keyword):
             logger.info(
                 f"[{keyword}] 已忽略 {item.id} | "
                 f"Blocked={blocked_keyword} | "
+                f"Title={item.title}"
+            )
+
+            return "ignored"
+
+        if item_exceeds_max_price(item):
+            db.save(item, keyword)
+            logger.info(
+                f"[{keyword}] 已忽略 {item.id} | "
+                f"Price={item.price:,} | "
+                f"MaxPrice={MAX_PRICE:,} | "
                 f"Title={item.title}"
             )
 
@@ -150,6 +169,17 @@ def validate_positive_number(name, value):
         raise ValueError(f"{name} 必须大于 0")
 
 
+def validate_optional_positive_integer(name, value):
+    if value is None:
+        return
+
+    if not isinstance(value, int):
+        raise ValueError(f"{name} 必须是整数或 None")
+
+    if value <= 0:
+        raise ValueError(f"{name} 必须大于 0")
+
+
 def validate_non_negative_integer(name, value):
     if not isinstance(value, int):
         raise ValueError(f"{name} 必须是整数")
@@ -210,6 +240,10 @@ def validate_runtime_config():
     validate_non_negative_integer(
         "MAX_BROWSER_RESTARTS_PER_SCAN",
         MAX_BROWSER_RESTARTS_PER_SCAN,
+    )
+    validate_optional_positive_integer(
+        "MAX_PRICE",
+        MAX_PRICE,
     )
 
     if not isinstance(DATABASE_NAME, str) or not DATABASE_NAME:
@@ -277,6 +311,7 @@ def main():
             "Yahoo Monitor 启动 | "
             f"Keywords={len(KEYWORDS)} | "
             f"BlockedTitleKeywords={len(BLOCKED_TITLE_KEYWORDS)} | "
+            f"MaxPrice={MAX_PRICE} | "
             f"Interval={SCAN_INTERVAL}s"
         )
 

@@ -5,6 +5,11 @@
 ### Added
 
 - Title blocked keyword filtering for unwanted items.
+- Optional maximum price filtering.
+
+### Changed
+
+- Replaced default blocked title keywords with a neutral placeholder.
 
 ## v0.6.x
 

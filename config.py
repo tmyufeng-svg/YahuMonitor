@@ -38,7 +38,9 @@ KEYWORDS = [
 
 # 标题屏蔽词
 BLOCKED_TITLE_KEYWORDS = [
-    "ジャンク",
-    "動作未確認",
-    "部品取り",
+    "サンプル除外ワード",
 ]
+
+
+# 价格上限。None 表示不启用价格过滤。
+MAX_PRICE = None
