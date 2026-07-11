@@ -753,10 +753,11 @@ def main():
             runtime_stats=runtime_stats,
         )
 
-        if browser_manager is not None:
-            browser_manager.stop()
-
         close_database(db)
+
+        if browser_manager is not None:
+            browser_manager.stop(wait_for_playwright=False)
+
         logger.info("Yahoo Monitor 已停止")
 
 

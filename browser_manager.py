@@ -11,9 +11,6 @@ from logger import logger
 class BrowserManager:
     """
     管理 Playwright、Browser 和 Page 的生命周期。
-
-    当前版本在停止时不主动关闭 Page 和 Browser。
-    这是为了避免 Ctrl+C 退出时卡在 page.close() 或 browser.close()。
     """
 
     def __init__(self):
@@ -50,7 +47,7 @@ class BrowserManager:
 
         logger.warning("正在重启 Browser")
 
-        self.stop()
+        self.stop(wait_for_playwright=True)
 
         self.playwright = None
         self.browser = None
@@ -58,19 +55,28 @@ class BrowserManager:
 
         return self.start()
 
-    def stop(self):
+    def stop(self, wait_for_playwright=True):
         """
         停止 BrowserManager。
 
-        不手动关闭 Page 和 Browser，交给 Playwright 停止流程统一清理。
-        在当前 Windows + Playwright 同步 API 环境下，这是退出最快、
-        最不容易卡住的方式。
+        正常运行中的重启可以等待 Playwright 清理。
+        Ctrl+C 退出时不等待 Playwright.stop()，避免 Windows
+        上同步 API 偶发卡住，导致终端无法回到提示符。
         """
-
-        logger.info("跳过 Browser 手动关闭，避免退出卡住")
 
         if self.playwright is None:
             return
+
+        if not wait_for_playwright:
+            logger.info(
+                "跳过 Playwright 等待关闭，避免退出卡住"
+            )
+            self.playwright = None
+            self.browser = None
+            self.page = None
+            return
+
+        logger.info("正在停止 Playwright")
 
         try:
             self.playwright.stop()
@@ -83,3 +89,8 @@ class BrowserManager:
             logger.warning(
                 f"Playwright 停止失败：{error}"
             )
+
+        finally:
+            self.playwright = None
+            self.browser = None
+            self.page = None
