@@ -1,20 +1,26 @@
 # Changelog
 
-## v0.8.x
+## v0.8.0 - 2026-07-12
 
 ### Added
 
-- Optional search-result item detail parsing to reduce detail page visits.
-- Scan logs for list-page detail usage and detail-page fallback counts.
-- List-page parse failure counts in scan, cycle, and runtime logs.
-- Search-result parse coverage counts even when all listings already exist in the database.
+- Search-result item detail parsing to reduce detail page visits.
+- Search-result parse coverage counts in scan, cycle, and runtime logs.
 - Non-blocking shutdown path to avoid hanging on Playwright.stop() after Ctrl+C.
-- Search-result parser now tries duplicate item links before falling back to detail pages.
 - Search-result parser now tries parent container text when link text is incomplete.
-- Forced process exit after Ctrl+C cleanup to suppress Windows asyncio transport noise.
 - Search-result parent text extraction now uses fast DOM evaluation instead of slow locator waits.
-- Compact scan, cycle, and runtime logs are now the default, with detailed scan metrics behind a config flag.
+- Duplicate item links are tried before falling back to detail pages.
 - New item processing logs now include item source and local detection time.
+
+### Changed
+
+- Compact scan, cycle, and runtime logs are now the default, with detailed scan metrics behind a config flag.
+- Existing listings can be scanned with search-result parsing stats without opening detail pages.
+
+### Fixed
+
+- Ctrl+C shutdown avoids waiting on Playwright cleanup when Windows sync API cleanup may hang.
+- Windows asyncio transport noise is suppressed after Ctrl+C cleanup.
 
 ## v0.7.x
 

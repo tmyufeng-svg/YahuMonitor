@@ -4,6 +4,8 @@ Yahoo Monitor is a Python monitor for Yahoo Flea Market search results.
 
 It scans configured keywords, stores seen items in SQLite, and sends new item notifications to Telegram.
 
+Current milestone: `v0.8.0`
+
 ## Features
 
 - Multi-keyword monitoring
@@ -11,7 +13,8 @@ It scans configured keywords, stores seen items in SQLite, and sends new item no
 - Telegram startup check and item notifications
 - Browser timeout configuration
 - Browser restart after scan failures
-- Runtime and scan summary logs
+- Search-result item parsing to reduce detail page visits
+- Compact runtime and scan summary logs
 - Graceful Ctrl+C shutdown
 
 ## Setup
@@ -66,3 +69,5 @@ Ctrl+C
 Do not commit `.env`, `items.db`, or logs.
 
 These files may contain private credentials or local runtime data.
+
+Keep Telegram tokens only in `.env`. If GitHub reports a secret scanning alert, rotate the bot token immediately.
