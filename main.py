@@ -21,6 +21,7 @@ from config import (
     USE_SEARCH_RESULT_ITEM_DETAILS,
     FORCE_EXIT_AFTER_CTRL_C,
     DETAILED_SCAN_LOGS,
+    DRY_RUN_SAMPLE_LIMIT,
 )
 from database import Database
 from logger import logger
@@ -216,6 +217,35 @@ def save_startup_baseline_items(
     return saved_count
 
 
+def log_dry_run_samples(keyword, source, candidates):
+    if DRY_RUN_SAMPLE_LIMIT <= 0:
+        return
+
+    for index, candidate in enumerate(
+        candidates[:DRY_RUN_SAMPLE_LIMIT],
+        start=1,
+    ):
+        item = candidate.get("item")
+
+        if item is None:
+            logger.info(
+                f"[{keyword}] Dry run sample #{index} | "
+                f"Marketplace={source} | "
+                f"Item={candidate['id']} | "
+                f"ParseError={candidate.get('parse_error')}"
+            )
+            continue
+
+        logger.info(
+            f"[{keyword}] Dry run sample #{index} | "
+            f"Marketplace={source} | "
+            f"Item={item.id} | "
+            f"Price={item.price:,} | "
+            f"Title={item.title} | "
+            f"Url={item.url}"
+        )
+
+
 def scan_once(
     scraper,
     db,
@@ -284,6 +314,11 @@ def scan_once(
                 f"[{keyword}] Dry run found {dry_run_count} "
                 f"new candidates | Marketplace={source} | "
                 f"Sample={sample_ids}"
+            )
+            log_dry_run_samples(
+                keyword=keyword,
+                source=source,
+                candidates=new_candidates,
             )
 
     elif not notify_item:
@@ -783,6 +818,10 @@ def validate_runtime_config():
     )
     validate_boolean("FORCE_EXIT_AFTER_CTRL_C", FORCE_EXIT_AFTER_CTRL_C)
     validate_boolean("DETAILED_SCAN_LOGS", DETAILED_SCAN_LOGS)
+    validate_non_negative_integer(
+        "DRY_RUN_SAMPLE_LIMIT",
+        DRY_RUN_SAMPLE_LIMIT,
+    )
     validate_boolean("DATABASE_ENABLE_WAL", DATABASE_ENABLE_WAL)
     validate_non_negative_integer(
         "DATABASE_BUSY_TIMEOUT_MS",

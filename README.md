@@ -88,6 +88,8 @@ The current main loop supports Yahoo tasks and can dispatch Mercari tasks when e
 
 Set `dry_run` to `True` for a task when you want to test parsing inside the main loop without sending Telegram notifications or writing new items to the database.
 
+`DRY_RUN_SAMPLE_LIMIT` controls how many parsed dry-run items are printed to the log for each scan.
+
 ## Mercari Probe
 
 `mercari_probe.py` can be used to test public Mercari search parsing without writing to the database or sending Telegram messages:

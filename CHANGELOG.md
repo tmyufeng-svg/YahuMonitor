@@ -18,6 +18,7 @@
 - Mercari probe now prints page diagnostics when no item links are found.
 - Added disabled Mercari watch task support in the main source dispatch path.
 - Added task-level dry-run mode for safe marketplace parser testing inside the main loop.
+- Added dry-run item sample logs for parsed title, price, and URL checks.
 
 ### Fixed
 
