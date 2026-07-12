@@ -34,6 +34,7 @@ TASK_FIELDS = [
     "mode",
     "dry_run",
     "notify",
+    "min_price",
     "max_price",
     "blocked_title_keywords",
     "limit",

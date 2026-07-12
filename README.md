@@ -4,7 +4,7 @@ Yahoo Monitor is a Python monitor for Yahoo Flea Market search results.
 
 It scans configured keywords, stores seen items in SQLite, and sends new item notifications to Telegram.
 
-Current milestone: `v1.1.0-beta`
+Current milestone: `v1.1.1-beta`
 
 V1.0 is a stable search-based monitor. It watches public search results and sends direct item links. Earlier-than-search detection is future V2.x research.
 
@@ -209,7 +209,7 @@ python export_app_state.py --output app_state.json
 
 Open `dashboard.html` in a browser, then select `app_state.json` to view configured tasks.
 
-The dashboard can change source, keyword, enabled status, mode, interval, and limit in the browser. Use `下载 watch_tasks.json` to save an updated task file, then replace the local `watch_tasks.json` after reviewing it.
+The dashboard can add tasks, delete tasks, and change source, keyword, enabled status, mode, interval, price range, blocked title keywords, and limit in the browser. Use `下载 watch_tasks.json` to save an updated task file, then replace the local `watch_tasks.json` after reviewing it.
 
 Dashboard workflow:
 
@@ -221,10 +221,11 @@ Then:
 
 1. Open `dashboard.html`.
 2. Select `app_state.json`.
-3. Edit source, keyword, enabled status, mode, interval, or limit.
-4. Click `下载 watch_tasks.json`.
-5. Replace the local `watch_tasks.json`.
-6. Run `python task_config_check.py`.
+3. Add, delete, or edit tasks.
+4. Edit source, keyword, enabled status, mode, interval, price range, blocked title keywords, or limit.
+5. Click `下载 watch_tasks.json`.
+6. Replace the local `watch_tasks.json`.
+7. Run `python task_config_check.py`.
 
 List configured tasks:
 
@@ -304,6 +305,8 @@ Set `notify` to `false` for a task when you want to save new items to the databa
 `DRY_RUN_SAMPLE_LIMIT` controls how many parsed dry-run items are printed to the log for each scan.
 
 Task-level `max_price` and `blocked_title_keywords` override the global filters when they are set. Use `null` to keep the global default.
+
+Task-level `min_price` and `max_price` form the price range. Use `null` for either side to leave that side unlimited.
 
 Task-level `limit` controls how many unique search results are parsed per scan. Use `null` for no limit, or a small integer such as `15` when testing Mercari.
 

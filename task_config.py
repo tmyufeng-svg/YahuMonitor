@@ -23,6 +23,7 @@ DEFAULT_TASK = {
     "mode": "notify",
     "dry_run": False,
     "notify": True,
+    "min_price": None,
     "max_price": None,
     "blocked_title_keywords": None,
     "limit": None,
@@ -215,9 +216,26 @@ def validate_watch_task(task, index):
     )
 
     validate_optional_positive_integer(
+        f"task #{index}.min_price",
+        task.get("min_price"),
+    )
+
+    validate_optional_positive_integer(
         f"task #{index}.max_price",
         task.get("max_price"),
     )
+
+    min_price = task.get("min_price")
+    max_price = task.get("max_price")
+
+    if (
+        min_price is not None
+        and max_price is not None
+        and min_price > max_price
+    ):
+        raise ValueError(
+            f"task #{index}.min_price cannot be greater than max_price"
+        )
 
     validate_optional_positive_integer(
         f"task #{index}.limit",

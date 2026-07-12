@@ -61,6 +61,9 @@ Confirm:
 - Task list loads from `app_state.json`.
 - Enabled status is visible.
 - Source and keyword can be edited.
+- Tasks can be added and deleted.
+- Price range can be edited.
+- Blocked title keywords can be edited.
 - Mode, interval, and limit can be changed.
 - `下载 watch_tasks.json` exports a valid JSON file.
 - The exported file passes `python task_config_check.py` after replacement.

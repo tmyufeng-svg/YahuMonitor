@@ -1,8 +1,8 @@
 # Yahoo Monitor Roadmap
 
-## Current Version: 1.1.0-beta
+## Current Version: 1.1.1-beta
 
-This version improves dashboard-based task editing.
+This version expands dashboard-based task editing.
 
 Before treating this beta as stable, run:
 
@@ -29,6 +29,8 @@ The immediate goal is to make configured watch tasks run safely and repeatably:
 - UI-ready JSON export for tasks, schema, categories, modes, and version state
 - Read-only local dashboard for viewing configured tasks from `app_state.json`
 - Dashboard editing for source, keyword, enabled status, mode, interval, and limit with JSON download
+- Dashboard add/delete task controls
+- Dashboard editing for blocked title keywords and price range
 - V1.0 release checklist and stronger release readiness checks
 
 Useful test commands:
@@ -53,6 +55,7 @@ V1.0 should be a stable search-result monitor:
 - Basic front-end configuration UI
 - JSON-based task configuration that the UI can read and write safely
 - Dashboard editing for marketplace source and keyword
+- Dashboard editing for price range and blocked title keywords
 
 This version watches public search pages. It can be useful, but it should not be expected to beat paid monitors that detect items before search indexes update.
 

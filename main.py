@@ -68,6 +68,13 @@ def item_exceeds_max_price(item, max_price):
     return item.price > max_price
 
 
+def item_below_min_price(item, min_price):
+    if min_price is None:
+        return False
+
+    return item.price < min_price
+
+
 def current_detected_at():
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
@@ -82,6 +89,7 @@ def process_item(
     source=YAHOO_SOURCE,
     task_name=None,
     notify=True,
+    min_price=None,
     max_price=MAX_PRICE,
     blocked_title_keywords=None,
 ):
@@ -130,6 +138,30 @@ def process_item(
                 f"Source={item_source} | "
                 f"DetectedAt={detected_at} | "
                 f"Blocked={blocked_keyword} | "
+                f"Title={item.title}"
+            )
+
+            return {
+                "status": "ignored",
+                "detail_fetched": detail_fetched,
+            }
+
+        if item_below_min_price(item, min_price):
+            db.save(
+                item=item,
+                keyword=keyword,
+                source=source,
+                status="ignored",
+                ignore_reason=f"price<{min_price}",
+            )
+            logger.info(
+                f"[{keyword}] Ignored {item.id} | "
+                f"Task={task_name} | "
+                f"Marketplace={source} | "
+                f"Source={item_source} | "
+                f"DetectedAt={detected_at} | "
+                f"Price={item.price:,} | "
+                f"MinPrice={min_price:,} | "
                 f"Title={item.title}"
             )
 
@@ -326,6 +358,7 @@ def scan_once(
     notify=True,
     limit=None,
     category_id=None,
+    min_price=None,
     max_price=MAX_PRICE,
     blocked_title_keywords=None,
 ):
@@ -435,6 +468,7 @@ def scan_once(
                 source=source,
                 task_name=task_name,
                 notify=notify,
+                min_price=min_price,
                 max_price=max_price,
                 blocked_title_keywords=blocked_title_keywords,
             )
@@ -812,6 +846,10 @@ def task_max_price(task):
     return task.get("max_price", MAX_PRICE)
 
 
+def task_min_price(task):
+    return task.get("min_price", None)
+
+
 def task_limit(task):
     return task.get("limit", None)
 
@@ -849,6 +887,7 @@ def log_watch_tasks(tasks):
             f"DryRun={task_dry_run(task)} | "
             f"Notify={task_notify(task)} | "
             f"Limit={task_limit(task)} | "
+            f"MinPrice={task_min_price(task)} | "
             f"MaxPrice={task_max_price(task)} | "
             f"BlockedTitleKeywords="
             f"{len(task_blocked_title_keywords(task))}"
@@ -992,9 +1031,24 @@ def validate_watch_tasks():
             )
 
         validate_optional_positive_integer(
+            f"WATCH_TASKS[{index}].min_price",
+            task_min_price(task),
+        )
+
+        validate_optional_positive_integer(
             f"WATCH_TASKS[{index}].max_price",
             task_max_price(task),
         )
+
+        if (
+            task_min_price(task) is not None
+            and task_max_price(task) is not None
+            and task_min_price(task) > task_max_price(task)
+        ):
+            raise ValueError(
+                f"WATCH_TASKS[{index}].min_price "
+                "cannot be greater than max_price"
+            )
 
         validate_optional_positive_integer(
             f"WATCH_TASKS[{index}].limit",
@@ -1289,6 +1343,7 @@ def main():
             f"Tasks={len(tasks)} | "
             f"MaxCycles={args.max_cycles} | "
             f"BlockedTitleKeywords={len(BLOCKED_TITLE_KEYWORDS)} | "
+            "MinPrice=None | "
             f"MaxPrice={MAX_PRICE} | "
             f"NotifyExistingOnStartup={NOTIFY_EXISTING_ON_STARTUP} | "
             f"UseSearchResultItemDetails={USE_SEARCH_RESULT_ITEM_DETAILS} | "
@@ -1327,6 +1382,7 @@ def main():
                             notify=task_notify(task),
                             limit=task_limit(task),
                             category_id=task_category_id(task),
+                            min_price=task_min_price(task),
                             max_price=task_max_price(task),
                             blocked_title_keywords=task_blocked_title_keywords(
                                 task

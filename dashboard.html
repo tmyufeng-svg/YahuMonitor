@@ -6,7 +6,6 @@
   <title>Yahoo Monitor 控制面板</title>
   <style>
     :root {
-      color-scheme: light;
       --bg: #f6f7f9;
       --panel: #ffffff;
       --text: #1f2937;
@@ -14,19 +13,16 @@
       --line: #d9dee7;
       --accent: #2563eb;
       --accent-dark: #1d4ed8;
-      --ok: #15803d;
-      --off: #9ca3af;
+      --danger: #dc2626;
     }
 
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     body {
       margin: 0;
       background: var(--bg);
       color: var(--text);
-      font-family: Arial, "Helvetica Neue", sans-serif;
+      font-family: Arial, "Microsoft YaHei", sans-serif;
     }
 
     header {
@@ -38,11 +34,10 @@
     h1 {
       margin: 0 0 6px;
       font-size: 24px;
-      line-height: 1.2;
     }
 
     main {
-      max-width: 1180px;
+      max-width: 1280px;
       margin: 0 auto;
       padding: 20px;
     }
@@ -62,6 +57,13 @@
       justify-content: space-between;
       padding: 14px;
       margin-bottom: 16px;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: flex-end;
     }
 
     .summary {
@@ -89,18 +91,23 @@
       font-size: 24px;
     }
 
+    .table-wrap {
+      overflow-x: auto;
+    }
+
     table {
       width: 100%;
+      min-width: 1180px;
       border-collapse: collapse;
       table-layout: fixed;
     }
 
     th,
     td {
-      padding: 12px;
+      padding: 10px;
       border-bottom: 1px solid var(--line);
       text-align: left;
-      font-size: 14px;
+      font-size: 13px;
       vertical-align: middle;
       word-break: break-word;
     }
@@ -112,35 +119,7 @@
       background: #fbfcfe;
     }
 
-    .badge {
-      display: inline-flex;
-      align-items: center;
-      min-height: 24px;
-      padding: 3px 8px;
-      border-radius: 999px;
-      background: #edf2ff;
-      color: var(--accent);
-      font-size: 12px;
-      font-weight: 700;
-    }
-
-    .badge.off {
-      background: #f3f4f6;
-      color: var(--off);
-    }
-
-    .badge.on {
-      background: #e8f7ee;
-      color: var(--ok);
-    }
-
-    .muted {
-      color: var(--muted);
-    }
-
-    input[type="file"] {
-      max-width: 100%;
-    }
+    .muted { color: var(--muted); }
 
     button {
       min-height: 36px;
@@ -153,18 +132,12 @@
       font-weight: 700;
     }
 
-    button:disabled {
-      background: var(--off);
-      cursor: not-allowed;
-    }
-
-    button:hover:not(:disabled) {
-      background: var(--accent-dark);
-    }
+    button:hover:not(:disabled) { background: var(--accent-dark); }
+    button:disabled { background: #9ca3af; cursor: not-allowed; }
+    button.danger { background: var(--danger); }
 
     select,
-    input[type="number"],
-    input[type="text"] {
+    input {
       width: 100%;
       min-height: 32px;
       border: 1px solid var(--line);
@@ -174,44 +147,35 @@
       color: var(--text);
     }
 
+    input[type="file"] { max-width: 100%; }
+
     @media (max-width: 760px) {
-      .toolbar {
-        align-items: flex-start;
-        flex-direction: column;
-      }
-
-      .summary {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
-
-      th:nth-child(5),
-      td:nth-child(5),
-      th:nth-child(6),
-      td:nth-child(6) {
-        display: none;
-      }
+      .toolbar { align-items: flex-start; flex-direction: column; }
+      .actions { justify-content: flex-start; }
+      .summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
     }
   </style>
 </head>
 <body>
   <header>
     <h1>Yahoo Monitor 控制面板</h1>
-    <div id="subtitle" class="muted">选择 app_state.json 查看和编辑监控任务。</div>
+    <div id="subtitle" class="muted">选择 app_state.json 后，可以编辑任务并导出 watch_tasks.json。</div>
   </header>
 
   <main>
     <section class="toolbar">
       <div>
-        <strong>任务配置预览</strong>
+        <strong>任务配置</strong>
         <div class="muted">先运行：python export_app_state.py --output app_state.json</div>
       </div>
-      <div>
+      <div class="actions">
         <input id="stateFile" type="file" accept="application/json,.json">
+        <button id="addTask" disabled>新增任务</button>
         <button id="downloadTasks" disabled>下载 watch_tasks.json</button>
       </div>
     </section>
 
-    <section class="summary" aria-label="Summary">
+    <section class="summary" aria-label="汇总">
       <div class="metric">
         <span>任务总数</span>
         <strong id="totalTasks">-</strong>
@@ -234,19 +198,22 @@
       <table>
         <thead>
           <tr>
-            <th style="width: 18%">任务名</th>
-            <th style="width: 9%">状态</th>
-            <th style="width: 11%">平台</th>
-            <th style="width: 19%">关键词</th>
-            <th style="width: 12%">模式</th>
-            <th style="width: 10%">间隔</th>
-            <th style="width: 9%">分类</th>
-            <th style="width: 12%">数量</th>
+            <th style="width: 150px">任务名</th>
+            <th style="width: 88px">状态</th>
+            <th style="width: 96px">平台</th>
+            <th style="width: 150px">关键词</th>
+            <th style="width: 105px">模式</th>
+            <th style="width: 82px">间隔</th>
+            <th style="width: 92px">最低价</th>
+            <th style="width: 92px">最高价</th>
+            <th style="width: 190px">屏蔽词</th>
+            <th style="width: 82px">数量</th>
+            <th style="width: 82px">操作</th>
           </tr>
         </thead>
         <tbody id="taskRows">
           <tr>
-            <td colspan="8" class="muted">尚未加载 app_state.json。</td>
+            <td colspan="11" class="muted">尚未加载 app_state.json。</td>
           </tr>
         </tbody>
       </table>
@@ -255,12 +222,22 @@
 
   <script>
     const fileInput = document.getElementById("stateFile");
+    const addButton = document.getElementById("addTask");
     const downloadButton = document.getElementById("downloadTasks");
     const rows = document.getElementById("taskRows");
     let currentState = null;
 
     function text(value) {
-      return value === null || value === undefined || value === "" ? "-" : String(value);
+      return value === null || value === undefined || value === "" ? "" : String(value);
+    }
+
+    function numberOrNull(value) {
+      return value === "" || value === null || value === undefined ? null : Number(value);
+    }
+
+    function wordsOrNull(value) {
+      const words = text(value).split(/\s+/).map((word) => word.trim()).filter(Boolean);
+      return words.length ? words : null;
     }
 
     function escapeHtml(value) {
@@ -271,7 +248,7 @@
     }
 
     function escapeAttr(value) {
-      return String(value ?? "")
+      return text(value)
         .replaceAll("&", "&amp;")
         .replaceAll('"', "&quot;")
         .replaceAll("<", "&lt;")
@@ -279,20 +256,23 @@
     }
 
     function setText(id, value) {
-      document.getElementById(id).textContent = text(value);
+      document.getElementById(id).textContent = value === null || value === undefined || value === "" ? "-" : String(value);
     }
 
-    function normalizeTask(task) {
-      const modeMap = {
+    function modeFlags(mode) {
+      const map = {
         "dry-run": { dry_run: true, notify: false },
         silent: { dry_run: false, notify: false },
         notify: { dry_run: false, notify: true }
       };
-      const mode = task.mode || "notify";
-      const flags = modeMap[mode] || modeMap.notify;
+      return map[mode] || map.notify;
+    }
 
+    function normalizeTask(task) {
       const source = task.source || "yahoo";
-      const keyword = task.keyword || "";
+      const keyword = text(task.keyword).trim();
+      const mode = task.mode || "notify";
+      const flags = modeFlags(mode);
 
       return {
         task_name: task.task_name || `${source} | ${keyword}`,
@@ -304,18 +284,16 @@
         mode,
         dry_run: flags.dry_run,
         notify: flags.notify,
-        max_price: task.max_price ?? null,
+        min_price: numberOrNull(task.min_price),
+        max_price: numberOrNull(task.max_price),
         blocked_title_keywords: task.blocked_title_keywords ?? null,
-        limit: task.limit === "" || task.limit === undefined ? null : task.limit,
+        limit: numberOrNull(task.limit),
         enabled: task.enabled !== false
       };
     }
 
     function updateSummary() {
-      if (!currentState) {
-        return;
-      }
-
+      if (!currentState) return;
       const tasks = currentState.tasks || [];
       const enabled = tasks.filter((task) => task.enabled !== false).length;
 
@@ -332,36 +310,49 @@
     }
 
     function updateTask(index, field, value) {
-      if (!currentState || !currentState.tasks[index]) {
-        return;
-      }
-
+      if (!currentState || !currentState.tasks[index]) return;
       const task = currentState.tasks[index];
 
-      if (field === "enabled") {
-        task.enabled = value;
-      } else if (field === "source") {
-        task.source = value;
-        task.task_name = `${value} | ${task.keyword || ""}`;
-      } else if (field === "keyword") {
-        task.keyword = value.trim();
-        task.task_name = `${task.source || "yahoo"} | ${task.keyword}`;
-      } else if (field === "interval") {
-        task.interval = Number(value) || 2;
-      } else if (field === "limit") {
-        task.limit = value === "" ? null : Number(value);
-      } else if (field === "mode") {
-        task.mode = value;
-        Object.assign(task, normalizeTask(task));
-      }
+      if (field === "enabled") task.enabled = value;
+      if (field === "source") task.source = value;
+      if (field === "keyword") task.keyword = value.trim();
+      if (field === "mode") task.mode = value;
+      if (field === "interval") task.interval = Number(value) || 2;
+      if (field === "min_price") task.min_price = numberOrNull(value);
+      if (field === "max_price") task.max_price = numberOrNull(value);
+      if (field === "blocked_title_keywords") task.blocked_title_keywords = wordsOrNull(value);
+      if (field === "limit") task.limit = numberOrNull(value);
 
+      task.task_name = `${task.source || "yahoo"} | ${task.keyword || ""}`;
       currentState.tasks[index] = normalizeTask(task);
       updateSummary();
+      renderRows();
+    }
+
+    function deleteTask(index) {
+      if (!currentState) return;
+      currentState.tasks.splice(index, 1);
+      updateSummary();
+      renderRows();
+    }
+
+    function addTask() {
+      if (!currentState) return;
+      const source = currentState.schema?.sources?.[0] || "yahoo";
+      const task = normalizeTask({
+        source,
+        keyword: "New Keyword",
+        interval: 2,
+        mode: "notify",
+        enabled: false
+      });
+      currentState.tasks.push(task);
+      updateSummary();
+      renderRows();
     }
 
     function sourceOptions(selectedSource) {
       const sources = currentState?.schema?.sources || ["yahoo", "mercari"];
-
       return sources.map((source) => {
         const selected = source === selectedSource ? "selected" : "";
         return `<option value="${source}" ${selected}>${source}</option>`;
@@ -374,30 +365,24 @@
         silent: {},
         notify: {}
       };
-
       return Object.keys(modes).map((mode) => {
         const selected = mode === selectedMode ? "selected" : "";
         return `<option value="${mode}" ${selected}>${mode}</option>`;
       }).join("");
     }
 
-    function renderState(state) {
-      currentState = state;
-      const summary = state.summary || {};
-      const app = state.app || {};
-      const tasks = state.tasks || [];
+    function blockedWordsText(task) {
+      return Array.isArray(task.blocked_title_keywords)
+        ? task.blocked_title_keywords.join(" ")
+        : "";
+    }
 
-      document.getElementById("subtitle").textContent = app.name || "Yahoo Monitor";
-      setText("totalTasks", summary.total);
-      setText("enabledTasks", summary.enabled);
-      setText("disabledTasks", summary.disabled);
-      setText("version", app.version);
-      downloadButton.disabled = false;
-
+    function renderRows() {
+      const tasks = currentState?.tasks || [];
       rows.innerHTML = "";
 
       if (!tasks.length) {
-        rows.innerHTML = '<tr><td colspan="8" class="muted">尚未配置任务。</td></tr>';
+        rows.innerHTML = '<tr><td colspan="11" class="muted">尚未配置任务。</td></tr>';
         return;
       }
 
@@ -413,51 +398,69 @@
             </select>
           </td>
           <td>
-            <select data-index="${index}" data-field="source">
-              ${sourceOptions(task.source)}
-            </select>
+            <select data-index="${index}" data-field="source">${sourceOptions(task.source)}</select>
           </td>
           <td>
             <input data-index="${index}" data-field="keyword" type="text" value="${escapeAttr(task.keyword)}">
           </td>
           <td>
-            <select data-index="${index}" data-field="mode">
-              ${taskModeOptions(task.mode)}
-            </select>
+            <select data-index="${index}" data-field="mode">${taskModeOptions(task.mode)}</select>
           </td>
           <td>
-            <input data-index="${index}" data-field="interval" type="number" min="0.5" step="0.5" value="${text(task.interval)}">
+            <input data-index="${index}" data-field="interval" type="number" min="0.5" step="0.5" value="${escapeAttr(task.interval)}">
           </td>
-          <td>${text(task.category_key)}</td>
           <td>
-            <input data-index="${index}" data-field="limit" type="number" min="1" step="1" value="${task.limit ?? ""}" placeholder="不限">
+            <input data-index="${index}" data-field="min_price" type="number" min="1" step="1" value="${escapeAttr(task.min_price)}" placeholder="不限">
+          </td>
+          <td>
+            <input data-index="${index}" data-field="max_price" type="number" min="1" step="1" value="${escapeAttr(task.max_price)}" placeholder="不限">
+          </td>
+          <td>
+            <input data-index="${index}" data-field="blocked_title_keywords" type="text" value="${escapeAttr(blockedWordsText(task))}" placeholder="空格分隔">
+          </td>
+          <td>
+            <input data-index="${index}" data-field="limit" type="number" min="1" step="1" value="${escapeAttr(task.limit)}" placeholder="不限">
+          </td>
+          <td>
+            <button class="danger" data-index="${index}" data-action="delete">删除</button>
           </td>
         `;
         rows.appendChild(row);
       }
     }
 
+    function renderState(state) {
+      currentState = state;
+      const app = state.app || {};
+
+      document.getElementById("subtitle").textContent = app.name || "Yahoo Monitor";
+      setText("version", app.version);
+      addButton.disabled = false;
+      downloadButton.disabled = false;
+      updateSummary();
+      renderRows();
+    }
+
     rows.addEventListener("change", (event) => {
       const element = event.target;
       const index = Number(element.dataset.index);
       const field = element.dataset.field;
-
-      if (!field || Number.isNaN(index)) {
-        return;
-      }
-
-      const value = field === "enabled"
-        ? element.value === "true"
-        : element.value;
-
+      if (!field || Number.isNaN(index)) return;
+      const value = field === "enabled" ? element.value === "true" : element.value;
       updateTask(index, field, value);
     });
 
-    downloadButton.addEventListener("click", () => {
-      if (!currentState) {
-        return;
-      }
+    rows.addEventListener("click", (event) => {
+      const element = event.target;
+      if (element.dataset.action !== "delete") return;
+      const index = Number(element.dataset.index);
+      if (!Number.isNaN(index)) deleteTask(index);
+    });
 
+    addButton.addEventListener("click", addTask);
+
+    downloadButton.addEventListener("click", () => {
+      if (!currentState) return;
       const tasks = (currentState.tasks || []).map(normalizeTask);
       const blob = new Blob(
         [JSON.stringify(tasks, null, 2) + "\n"],
@@ -473,15 +476,12 @@
 
     fileInput.addEventListener("change", async (event) => {
       const file = event.target.files[0];
-      if (!file) {
-        return;
-      }
+      if (!file) return;
 
       try {
-        const state = JSON.parse(await file.text());
-        renderState(state);
+        renderState(JSON.parse(await file.text()));
       } catch (error) {
-        rows.innerHTML = `<tr><td colspan="8">JSON 加载失败：${error.message}</td></tr>`;
+        rows.innerHTML = `<tr><td colspan="11">JSON 加载失败：${escapeHtml(error.message)}</td></tr>`;
       }
     });
   </script>

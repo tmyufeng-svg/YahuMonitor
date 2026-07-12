@@ -1,5 +1,14 @@
 # Changelog
 
+## v1.1.1-beta
+
+### Added
+
+- Dashboard can add and delete watch tasks.
+- Dashboard can edit blocked title keywords.
+- Dashboard can edit task-level minimum and maximum price.
+- Task configuration now supports `min_price`.
+
 ## v1.1.0-beta
 
 ### Changed

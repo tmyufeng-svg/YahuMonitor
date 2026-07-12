@@ -109,8 +109,9 @@ def command_add(args):
         "category_key": args.category_key,
         "category_id": args.category_id,
         "mode": args.mode,
+        "min_price": args.min_price,
         "max_price": args.max_price,
-        "blocked_title_keywords": None,
+        "blocked_title_keywords": args.blocked_title_keywords,
         "limit": args.limit,
         "enabled": not args.disabled,
     }
@@ -196,8 +197,18 @@ def build_parser():
         default=None,
     )
     add_parser.add_argument(
+        "--min-price",
+        type=int,
+        default=None,
+    )
+    add_parser.add_argument(
         "--max-price",
         type=int,
+        default=None,
+    )
+    add_parser.add_argument(
+        "--blocked-title-keywords",
+        nargs="*",
         default=None,
     )
     add_parser.add_argument(

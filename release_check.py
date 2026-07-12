@@ -64,7 +64,12 @@ REQUIRED_DASHBOARD_TEXT = [
     "data-field=\"keyword\"",
     "data-field=\"mode\"",
     "data-field=\"interval\"",
+    "data-field=\"min_price\"",
+    "data-field=\"max_price\"",
+    "data-field=\"blocked_title_keywords\"",
     "data-field=\"limit\"",
+    "新增任务",
+    "删除",
 ]
 
 
