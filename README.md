@@ -35,12 +35,22 @@ TOKEN=YOUR_TELEGRAM_BOT_TOKEN
 CHAT_ID=YOUR_TELEGRAM_CHAT_ID
 ```
 
-Edit `config.py` for keywords and runtime settings:
+Edit `config.py` for watch tasks and runtime settings:
 
 ```python
-KEYWORDS = [
-    "Contax T3",
-    "Nikon L35AF",
+WATCH_TASKS = [
+    {
+        "task_name": "Yahoo | Contax T3",
+        "source": "yahoo",
+        "keyword": "Contax T3",
+        "interval": 2,
+        "category_id": None,
+        "dry_run": False,
+        "notify": True,
+        "max_price": None,
+        "blocked_title_keywords": None,
+        "enabled": True,
+    },
 ]
 ```
 
@@ -69,7 +79,7 @@ Ctrl+C
 
 ## Watch Tasks
 
-`WATCH_TASKS` in `config.py` is the long-term configuration format:
+`WATCH_TASKS` in `config.py` is the main configuration format:
 
 ```python
 WATCH_TASKS = [

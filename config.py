@@ -36,21 +36,14 @@ DETAILED_SCAN_LOGS = False
 DRY_RUN_SAMPLE_LIMIT = 5
 
 
-# Yahoo search keywords
-KEYWORDS = [
-    "Contax T3",
-    "Nikon L35AF",
-]
-
-
-# Watch tasks are the long-term configuration format.
-# Each task can later carry source-specific category and filter settings.
+# Watch tasks are the main configuration format.
+# Each task can carry source-specific category and filter settings.
 # The per-task interval is used by the scheduler.
 WATCH_TASKS = [
     {
-        "task_name": f"Yahoo | {keyword}",
+        "task_name": "Yahoo | Contax T3",
         "source": "yahoo",
-        "keyword": keyword,
+        "keyword": "Contax T3",
         "interval": SCAN_INTERVAL,
         "category_id": None,
         "dry_run": False,
@@ -58,9 +51,19 @@ WATCH_TASKS = [
         "max_price": None,
         "blocked_title_keywords": None,
         "enabled": True,
-    }
-    for keyword in KEYWORDS
-] + [
+    },
+    {
+        "task_name": "Yahoo | Nikon L35AF",
+        "source": "yahoo",
+        "keyword": "Nikon L35AF",
+        "interval": SCAN_INTERVAL,
+        "category_id": None,
+        "dry_run": False,
+        "notify": True,
+        "max_price": None,
+        "blocked_title_keywords": None,
+        "enabled": True,
+    },
     {
         "task_name": "Mercari dry run | Contax T3",
         "source": "mercari",
