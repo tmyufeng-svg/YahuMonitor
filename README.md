@@ -57,6 +57,8 @@ WATCH_TASKS = [
 
 `config.example.py` contains a complete reference configuration.
 
+The default `config.py` also includes disabled Mercari dry-run, silent, and notification templates. Keep them disabled until probe output looks correct.
+
 Validate local configuration without opening a browser or sending Telegram messages:
 
 ```powershell
@@ -152,10 +154,28 @@ Run the first Mercari task as dry run:
 python task_probe.py --mode dry-run --limit 5
 ```
 
+Run the first Mercari task by source:
+
+```powershell
+python task_probe.py --source mercari --mode dry-run --limit 5
+```
+
+Run the first task matching a source and keyword:
+
+```powershell
+python task_probe.py --source mercari --keyword "Contax T3" --mode dry-run --limit 5
+```
+
 Run a specific task in database-only silent mode using an in-memory database:
 
 ```powershell
 python task_probe.py --task-name "Mercari silent | Contax T3" --mode silent --limit 5
+```
+
+Run Mercari through the silent path without touching `items.db`:
+
+```powershell
+python task_probe.py --source mercari --keyword "Contax T3" --mode silent --limit 5
 ```
 
 ## Mercari Task Modes

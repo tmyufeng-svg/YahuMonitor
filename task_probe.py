@@ -41,29 +41,67 @@ def list_tasks(tasks):
         )
 
 
-def find_task(tasks, task_name_value, task_index):
+def task_matches(task, source, keyword):
+    if source is not None and task_source(task) != source:
+        return False
+
+    if keyword is not None:
+        task_keyword_value = task_keyword(task).strip().lower()
+        keyword_value = keyword.strip().lower()
+
+        if task_keyword_value != keyword_value:
+            return False
+
+    return True
+
+
+def find_task(tasks, task_name_value, task_index, source, keyword):
     if task_index is not None:
         if task_index < 1 or task_index > len(tasks):
             raise ValueError("task index is out of range")
 
-        return tasks[task_index - 1]
+        task = tasks[task_index - 1]
+
+        if not task_matches(task, source, keyword):
+            raise ValueError(
+                "task index does not match the requested "
+                "source or keyword"
+            )
+
+        return task
 
     if task_name_value is not None:
         for task in tasks:
-            if task_name(task) == task_name_value:
+            if task_name(task) == task_name_value and task_matches(
+                task,
+                source,
+                keyword,
+            ):
                 return task
 
         raise ValueError(f"task not found: {task_name_value}")
 
-    for task in tasks:
-        if task_source(task) == "mercari":
-            return task
+    matching_tasks = [
+        task
+        for task in tasks
+        if task_matches(task, source, keyword)
+    ]
 
-    return tasks[0]
+    if matching_tasks:
+        for task in matching_tasks:
+            if task_source(task) == "mercari":
+                return task
+
+        return matching_tasks[0]
+
+    raise ValueError("no task matches the requested filters")
 
 
 def effective_limit(task, limit_override):
     if limit_override is not None:
+        if limit_override < 1:
+            raise ValueError("limit must be greater than 0")
+
         return limit_override
 
     return task_limit(task)
@@ -178,6 +216,15 @@ def main():
         help="1-based task index to run.",
     )
     parser.add_argument(
+        "--source",
+        choices=sorted(SUPPORTED_SOURCES),
+        help="Select the first task for a source.",
+    )
+    parser.add_argument(
+        "--keyword",
+        help="Select the first task matching a keyword.",
+    )
+    parser.add_argument(
         "--mode",
         choices=["dry-run", "silent"],
         default="dry-run",
@@ -199,6 +246,8 @@ def main():
         tasks=WATCH_TASKS,
         task_name_value=args.task_name,
         task_index=args.task_index,
+        source=args.source,
+        keyword=args.keyword,
     )
 
     run_task_probe(

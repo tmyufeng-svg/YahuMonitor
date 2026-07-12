@@ -30,6 +30,8 @@
 - Added task-level search result limits for safer marketplace trials.
 - Mercari probe `--limit` now limits parsed candidates, not only printed output.
 - Added `task_probe.py` for one-shot watch task testing without Telegram or `items.db` writes.
+- Added disabled Mercari silent and notification templates to the runtime config.
+- Added source and keyword selectors to `task_probe.py`.
 
 ### Fixed
 
