@@ -1,8 +1,8 @@
 # Yahoo Monitor Roadmap
 
-## Current Version: 1.0.0-beta
+## Current Version: 1.0.1-beta
 
-This version is the stable search-based monitor beta.
+This version adds a standalone Telegram delivery test.
 
 Before treating this beta as stable, run:
 
@@ -46,6 +46,7 @@ V1.0 should be a stable search-result monitor:
 - Multiple watch tasks
 - Category-aware tasks
 - Telegram notifications with direct item links
+- Standalone Telegram delivery test
 - SQLite deduplication
 - Safe local configuration through `.env`
 - Repeatable test and probe commands

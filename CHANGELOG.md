@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.0.1-beta
+
+### Added
+
+- Added `test_telegram.py` for checking Telegram delivery without starting the browser or monitor loop.
+
 ## v1.0.0-beta
 
 ### Added

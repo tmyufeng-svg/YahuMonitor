@@ -10,6 +10,7 @@ Run:
 python smoke_check.py
 python task_config_check.py
 python config_check.py
+python test_telegram.py
 python export_task_schema.py
 python export_app_state.py --output app_state.json
 python release_check.py

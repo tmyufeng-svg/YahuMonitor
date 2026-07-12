@@ -7,6 +7,7 @@ FILES_TO_COMPILE = [
     "config.example.py",
     "config_check.py",
     "release_check.py",
+    "test_telegram.py",
     "app_state.py",
     "export_app_state.py",
     "task_config.py",

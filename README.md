@@ -4,7 +4,7 @@ Yahoo Monitor is a Python monitor for Yahoo Flea Market search results.
 
 It scans configured keywords, stores seen items in SQLite, and sends new item notifications to Telegram.
 
-Current milestone: `v1.0.0-beta`
+Current milestone: `v1.0.1-beta`
 
 V1.0 is a stable search-based monitor. It watches public search results and sends direct item links. Earlier-than-search detection is future V2.x research.
 
@@ -87,6 +87,18 @@ Run local syntax smoke checks:
 python smoke_check.py
 ```
 
+Test Telegram delivery without opening a browser:
+
+```powershell
+python test_telegram.py
+```
+
+Send a custom Telegram test message:
+
+```powershell
+python test_telegram.py --message "Yahoo Monitor test"
+```
+
 Before tagging a V1.0 beta or stable release, follow `RELEASE_CHECKLIST.md`.
 
 ## Run
@@ -120,6 +132,7 @@ Ctrl+C
 - `mercari.py` - experimental Mercari public search scraper
 - `database.py` - SQLite storage and deduplication
 - `notifier.py` - Telegram notification sender
+- `test_telegram.py` - Telegram delivery test command
 - `browser_manager.py` - Playwright browser lifecycle
 - `app_state.py` - UI-ready app state builder
 - `export_app_state.py` - JSON export for future front-end integration
