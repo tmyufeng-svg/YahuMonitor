@@ -42,6 +42,22 @@ KEYWORDS = [
 ]
 
 
+# Watch tasks are the long-term configuration format.
+# Each task can later carry source-specific category and filter settings.
+# The per-task interval is validated now and will be used by the scheduler
+# in the next V0.9 step.
+WATCH_TASKS = [
+    {
+        "source": "yahoo",
+        "keyword": keyword,
+        "interval": SCAN_INTERVAL,
+        "category_id": None,
+        "enabled": True,
+    }
+    for keyword in KEYWORDS
+]
+
+
 # Title keywords to ignore.
 # Keep this as a harmless placeholder unless you really want filtering.
 BLOCKED_TITLE_KEYWORDS = [

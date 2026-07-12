@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.9.x
+
+### Research
+
+- Started Mercari feasibility research for a public-search-only monitor.
+- Documented conservative V0.9 scope and boundaries for Mercari support.
+
+### Added
+
+- Added marketplace source storage for existing and future monitored items.
+- Yahoo scans now explicitly store and log `source=yahoo`.
+- Added `WATCH_TASKS` as the future configuration shape for source, keyword, interval, and category-aware monitoring.
+
 ## v0.8.0 - 2026-07-12
 
 ### Added

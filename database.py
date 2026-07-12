@@ -23,6 +23,8 @@ class Database:
             """
             CREATE TABLE IF NOT EXISTS items(
                 id TEXT PRIMARY KEY,
+                source TEXT,
+                source_item_id TEXT,
                 keyword TEXT,
                 title TEXT,
                 price INTEGER,
@@ -34,6 +36,8 @@ class Database:
             """
         )
 
+        self._ensure_column("source", "TEXT")
+        self._ensure_column("source_item_id", "TEXT")
         self._ensure_column("keyword", "TEXT")
         self._ensure_column("title", "TEXT")
         self._ensure_column("price", "INTEGER")
@@ -43,6 +47,8 @@ class Database:
         self._ensure_column("first_seen", "TEXT")
 
         self._create_indexes()
+        self._backfill_source("yahoo")
+        self._backfill_source_item_id()
 
         self.conn.commit()
 
@@ -81,6 +87,27 @@ class Database:
 
         self.cursor.execute(
             """
+            CREATE INDEX IF NOT EXISTS idx_items_source
+            ON items(source)
+            """
+        )
+
+        self.cursor.execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_items_source_keyword
+            ON items(source, keyword)
+            """
+        )
+
+        self.cursor.execute(
+            """
+            CREATE INDEX IF NOT EXISTS idx_items_source_item_id
+            ON items(source, source_item_id)
+            """
+        )
+
+        self.cursor.execute(
+            """
             CREATE INDEX IF NOT EXISTS idx_items_keyword
             ON items(keyword)
             """
@@ -100,16 +127,47 @@ class Database:
             """
         )
 
-    def exists(self, item_id):
+    def _backfill_source(self, source):
 
         self.cursor.execute(
-            "SELECT 1 FROM items WHERE id=?",
-            (item_id,)
+            """
+            UPDATE items
+            SET source=?
+            WHERE source IS NULL OR source=''
+            """,
+            (source,),
+        )
+
+    def _backfill_source_item_id(self):
+
+        self.cursor.execute(
+            """
+            UPDATE items
+            SET source_item_id=id
+            WHERE source_item_id IS NULL OR source_item_id=''
+            """
+        )
+
+    def storage_id(self, item_id, source):
+        if source == "yahoo":
+            return item_id
+
+        return f"{source}:{item_id}"
+
+    def exists(self, item_id, source="yahoo"):
+
+        self.cursor.execute(
+            """
+            SELECT 1
+            FROM items
+            WHERE source=? AND source_item_id=?
+            """,
+            (source, item_id),
         )
 
         return self.cursor.fetchone() is not None
 
-    def get_existing_ids(self, item_ids):
+    def get_existing_ids(self, item_ids, source="yahoo"):
         if not item_ids:
             return set()
 
@@ -120,11 +178,12 @@ class Database:
 
         self.cursor.execute(
             f"""
-            SELECT id
+            SELECT source_item_id
             FROM items
-            WHERE id IN ({placeholders})
+            WHERE source=?
+            AND source_item_id IN ({placeholders})
             """,
-            tuple(item_ids),
+            (source, *tuple(item_ids)),
         )
 
         return {
@@ -168,20 +227,29 @@ class Database:
         self.cursor.execute(
             """
             SELECT
+                source,
                 keyword,
                 status,
                 COUNT(*)
             FROM items
-            GROUP BY keyword, status
+            GROUP BY source, keyword, status
             """
         )
 
-        for keyword, status, count in self.cursor.fetchall():
+        for source, keyword, status, count in self.cursor.fetchall():
+            source = source or ""
             keyword = keyword or ""
             status = status or ""
+            source_keyword = (
+                f"{source}:{keyword}"
+                if source
+                else keyword
+            )
 
-            if keyword not in counts:
-                counts[keyword] = {
+            if source_keyword not in counts:
+                counts[source_keyword] = {
+                    "source": source,
+                    "keyword": keyword,
                     "total": 0,
                     "notified": 0,
                     "ignored": 0,
@@ -189,13 +257,13 @@ class Database:
                     "other": 0,
                 }
 
-            counts[keyword]["total"] += count
+            counts[source_keyword]["total"] += count
 
-            if status in counts[keyword]:
-                counts[keyword][status] += count
+            if status in counts[source_keyword]:
+                counts[source_keyword][status] += count
 
             else:
-                counts[keyword]["other"] += count
+                counts[source_keyword]["other"] += count
 
         return counts
 
@@ -203,6 +271,7 @@ class Database:
         self,
         item,
         keyword,
+        source="yahoo",
         status="notified",
         ignore_reason=None,
     ):
@@ -211,6 +280,8 @@ class Database:
             """
             INSERT OR IGNORE INTO items(
                 id,
+                source,
+                source_item_id,
                 keyword,
                 title,
                 price,
@@ -218,9 +289,11 @@ class Database:
                 status,
                 ignore_reason
             )
-            VALUES(?, ?, ?, ?, ?, ?, ?)
+            VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
+                self.storage_id(item.id, source),
+                source,
                 item.id,
                 keyword,
                 item.title,
@@ -238,12 +311,15 @@ class Database:
         item_id,
         keyword,
         url,
+        source="yahoo",
     ):
 
         self.cursor.execute(
             """
             INSERT OR IGNORE INTO items(
                 id,
+                source,
+                source_item_id,
                 keyword,
                 title,
                 price,
@@ -251,9 +327,11 @@ class Database:
                 status,
                 ignore_reason
             )
-            VALUES(?, ?, ?, ?, ?, ?, ?)
+            VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
+                self.storage_id(item_id, source),
+                source,
                 item_id,
                 keyword,
                 None,
@@ -270,12 +348,15 @@ class Database:
         self,
         baseline_items,
         keyword,
+        source="yahoo",
     ):
         if not baseline_items:
             return 0
 
         rows = [
             (
+                self.storage_id(item_id, source),
+                source,
                 item_id,
                 keyword,
                 None,
@@ -291,6 +372,8 @@ class Database:
             """
             INSERT OR IGNORE INTO items(
                 id,
+                source,
+                source_item_id,
                 keyword,
                 title,
                 price,
@@ -298,7 +381,7 @@ class Database:
                 status,
                 ignore_reason
             )
-            VALUES(?, ?, ?, ?, ?, ?, ?)
+            VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             rows,
         )

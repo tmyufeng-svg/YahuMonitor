@@ -12,7 +12,7 @@ from config import (
     DATABASE_ENABLE_WAL,
     SCAN_INTERVAL,
     ERROR_RETRY_INTERVAL,
-    KEYWORDS,
+    WATCH_TASKS,
     BLOCKED_TITLE_KEYWORDS,
     MAX_PRICE,
     MAX_BROWSER_RESTARTS_PER_SCAN,
@@ -26,6 +26,12 @@ from database import Database
 from logger import logger
 from notifier import TelegramNotifier
 from yahoo import YahooScraper
+
+
+YAHOO_SOURCE = "yahoo"
+SUPPORTED_SOURCES = {
+    YAHOO_SOURCE,
+}
 
 
 def title_has_blocked_keyword(title):
@@ -56,6 +62,7 @@ def process_item(
     item_id,
     keyword,
     listing_item=None,
+    source=YAHOO_SOURCE,
 ):
     detail_fetched = listing_item is None
 
@@ -65,6 +72,7 @@ def process_item(
 
         logger.info(
             f"[{keyword}] NEW {item_id} | "
+            f"Marketplace={source} | "
             f"Source={item_source} | "
             f"DetectedAt={detected_at}"
         )
@@ -81,11 +89,13 @@ def process_item(
             db.save(
                 item=item,
                 keyword=keyword,
+                source=source,
                 status="ignored",
                 ignore_reason=f"title:{blocked_keyword}",
             )
             logger.info(
                 f"[{keyword}] Ignored {item.id} | "
+                f"Marketplace={source} | "
                 f"Source={item_source} | "
                 f"DetectedAt={detected_at} | "
                 f"Blocked={blocked_keyword} | "
@@ -101,11 +111,13 @@ def process_item(
             db.save(
                 item=item,
                 keyword=keyword,
+                source=source,
                 status="ignored",
                 ignore_reason=f"price>{MAX_PRICE}",
             )
             logger.info(
                 f"[{keyword}] Ignored {item.id} | "
+                f"Marketplace={source} | "
                 f"Source={item_source} | "
                 f"DetectedAt={detected_at} | "
                 f"Price={item.price:,} | "
@@ -122,11 +134,13 @@ def process_item(
         db.save(
             item=item,
             keyword=keyword,
+            source=source,
             status="notified",
         )
 
         logger.info(
             f"[{keyword}] Notified and saved {item.id} | "
+            f"Marketplace={source} | "
             f"Source={item_source} | "
             f"DetectedAt={detected_at}"
         )
@@ -170,7 +184,13 @@ def search_candidates(yahoo, keyword):
     ]
 
 
-def save_startup_baseline_items(yahoo, db, item_ids, keyword):
+def save_startup_baseline_items(
+    yahoo,
+    db,
+    item_ids,
+    keyword,
+    source=YAHOO_SOURCE,
+):
     baseline_items = [
         (
             item_id,
@@ -182,6 +202,7 @@ def save_startup_baseline_items(yahoo, db, item_ids, keyword):
     saved_count = db.save_baseline_item_ids(
         baseline_items=baseline_items,
         keyword=keyword,
+        source=source,
     )
 
     if saved_count:
@@ -192,7 +213,14 @@ def save_startup_baseline_items(yahoo, db, item_ids, keyword):
     return saved_count
 
 
-def scan_once(yahoo, db, notifier, keyword, scan):
+def scan_once(
+    yahoo,
+    db,
+    notifier,
+    keyword,
+    scan,
+    source=YAHOO_SOURCE,
+):
     start = time.perf_counter()
 
     candidates = search_candidates(
@@ -204,7 +232,10 @@ def scan_once(yahoo, db, notifier, keyword, scan):
         for candidate in candidates
     ]
     found_count = len(candidates)
-    existing_ids = db.get_existing_ids(item_ids)
+    existing_ids = db.get_existing_ids(
+        item_ids,
+        source=source,
+    )
     new_count = 0
     ignored_count = 0
     baseline_count = 0
@@ -245,6 +276,7 @@ def scan_once(yahoo, db, notifier, keyword, scan):
                 for candidate in new_candidates
             ],
             keyword=keyword,
+            source=source,
         )
 
     else:
@@ -267,6 +299,7 @@ def scan_once(yahoo, db, notifier, keyword, scan):
                 item_id=item_id,
                 keyword=keyword,
                 listing_item=listing_item,
+                source=source,
             )
 
             if result["detail_fetched"]:
@@ -292,6 +325,7 @@ def scan_once(yahoo, db, notifier, keyword, scan):
     log_scan_summary(
         scan=scan,
         keyword=keyword,
+        source=source,
         stats={
             "found": found_count,
             "new": new_count,
@@ -370,10 +404,11 @@ def format_error_counts(error_counts):
     )
 
 
-def log_scan_summary(scan, keyword, stats):
+def log_scan_summary(scan, keyword, source, stats):
     if not DETAILED_SCAN_LOGS:
         logger.info(
             f"Scan #{scan} | "
+            f"Marketplace={source} | "
             f"Keyword={keyword} | "
             f"Found={stats['found']} | "
             f"New={stats['new']} | "
@@ -386,6 +421,7 @@ def log_scan_summary(scan, keyword, stats):
 
     logger.info(
         f"Scan #{scan} | "
+        f"Marketplace={source} | "
         f"Keyword={keyword} | "
         f"Found={stats['found']} | "
         f"New={stats['new']} | "
@@ -403,11 +439,11 @@ def log_scan_summary(scan, keyword, stats):
     )
 
 
-def log_cycle_summary(scan, keyword_count, cycle_stats):
+def log_cycle_summary(scan, task_count, cycle_stats):
     if not DETAILED_SCAN_LOGS:
         logger.info(
             f"Cycle #{scan} | "
-            f"Keywords={keyword_count} | "
+            f"Tasks={task_count} | "
             f"Found={cycle_stats['found']} | "
             f"New={cycle_stats['new']} | "
             f"Ignored={cycle_stats['ignored']} | "
@@ -419,7 +455,7 @@ def log_cycle_summary(scan, keyword_count, cycle_stats):
 
     logger.info(
         f"Cycle #{scan} | "
-        f"Keywords={keyword_count} | "
+        f"Tasks={task_count} | "
         f"Found={cycle_stats['found']} | "
         f"New={cycle_stats['new']} | "
         f"Ignored={cycle_stats['ignored']} | "
@@ -480,10 +516,15 @@ def log_keyword_database_counts(db):
 
     for keyword in sorted(keyword_counts):
         counts = keyword_counts[keyword]
-        display_keyword = keyword or "(unknown keyword)"
+        display_source = counts.get("source") or "unknown"
+        display_keyword = (
+            counts.get("keyword")
+            or "(unknown keyword)"
+        )
 
         logger.info(
             "Keyword stats | "
+            f"Marketplace={display_source} | "
             f"Keyword={display_keyword} | "
             f"Items={counts['total']} | "
             f"Notified={counts['notified']} | "
@@ -546,22 +587,78 @@ def validate_non_negative_integer(name, value):
         raise ValueError(f"{name} cannot be less than 0")
 
 
-def validate_keywords():
-    if not KEYWORDS:
-        raise ValueError(
-            "KEYWORDS cannot be empty. "
-            "Set at least one keyword in config.py."
-        )
+def task_is_enabled(task):
+    return task.get("enabled", True)
 
-    invalid_keywords = [
-        keyword
-        for keyword in KEYWORDS
-        if not isinstance(keyword, str)
-        or not keyword.strip()
+
+def task_source(task):
+    return task.get("source", YAHOO_SOURCE)
+
+
+def task_keyword(task):
+    return task.get("keyword", "")
+
+
+def active_watch_tasks():
+    return [
+        task
+        for task in WATCH_TASKS
+        if task_is_enabled(task)
     ]
 
-    if invalid_keywords:
-        raise ValueError("KEYWORDS contains empty or invalid values")
+
+def validate_watch_tasks():
+    if not isinstance(WATCH_TASKS, list):
+        raise ValueError("WATCH_TASKS must be a list")
+
+    if not WATCH_TASKS:
+        raise ValueError(
+            "WATCH_TASKS cannot be empty. "
+            "Set at least one watch task in config.py."
+        )
+
+    enabled_count = 0
+
+    for index, task in enumerate(WATCH_TASKS, start=1):
+        if not isinstance(task, dict):
+            raise ValueError(
+                f"WATCH_TASKS[{index}] must be a dict"
+            )
+
+        enabled = task_is_enabled(task)
+
+        if not isinstance(enabled, bool):
+            raise ValueError(
+                f"WATCH_TASKS[{index}].enabled must be True or False"
+            )
+
+        if not enabled:
+            continue
+
+        enabled_count += 1
+
+        source = task_source(task)
+
+        if source not in SUPPORTED_SOURCES:
+            raise ValueError(
+                f"WATCH_TASKS[{index}].source is not supported: {source}"
+            )
+
+        keyword = task_keyword(task)
+
+        if not isinstance(keyword, str) or not keyword.strip():
+            raise ValueError(
+                f"WATCH_TASKS[{index}].keyword cannot be empty"
+            )
+
+        interval = task.get("interval", SCAN_INTERVAL)
+        validate_positive_number(
+            f"WATCH_TASKS[{index}].interval",
+            interval,
+        )
+
+    if enabled_count == 0:
+        raise ValueError("WATCH_TASKS has no enabled tasks")
 
 
 def validate_blocked_title_keywords():
@@ -579,7 +676,7 @@ def validate_blocked_title_keywords():
 
 
 def validate_runtime_config():
-    validate_keywords()
+    validate_watch_tasks()
     validate_blocked_title_keywords()
     validate_boolean("SEND_STARTUP_MESSAGE", SEND_STARTUP_MESSAGE)
     validate_boolean(
@@ -612,7 +709,7 @@ def validate_runtime_config():
         raise ValueError("DATABASE_NAME cannot be empty")
 
 
-def send_startup_check(notifier):
+def send_startup_check(notifier, task_count):
     if not SEND_STARTUP_MESSAGE:
         logger.info("Telegram startup test skipped")
         return
@@ -620,7 +717,7 @@ def send_startup_check(notifier):
     logger.info("Testing Telegram delivery")
 
     notifier.send_startup_message(
-        keyword_count=len(KEYWORDS)
+        keyword_count=task_count
     )
 
     logger.info("Telegram delivery OK")
@@ -646,6 +743,7 @@ def main():
 
     try:
         validate_runtime_config()
+        tasks = active_watch_tasks()
 
         db = Database(
             db_name=DATABASE_NAME,
@@ -672,7 +770,10 @@ def main():
             chat_id=CHAT_ID,
         )
 
-        send_startup_check(notifier)
+        send_startup_check(
+            notifier=notifier,
+            task_count=len(tasks),
+        )
 
         browser_manager = BrowserManager()
         page = browser_manager.start()
@@ -681,7 +782,7 @@ def main():
 
         logger.info(
             "Yahoo Monitor started | "
-            f"Keywords={len(KEYWORDS)} | "
+            f"Tasks={len(tasks)} | "
             f"BlockedTitleKeywords={len(BLOCKED_TITLE_KEYWORDS)} | "
             f"MaxPrice={MAX_PRICE} | "
             f"NotifyExistingOnStartup={NOTIFY_EXISTING_ON_STARTUP} | "
@@ -695,7 +796,10 @@ def main():
             cycle_stats = empty_scan_stats()
 
             try:
-                for keyword in KEYWORDS:
+                for task in tasks:
+                    source = task_source(task)
+                    keyword = task_keyword(task).strip()
+
                     try:
                         scan_stats = scan_once(
                             yahoo=yahoo,
@@ -703,6 +807,7 @@ def main():
                             notifier=notifier,
                             keyword=keyword,
                             scan=scan,
+                            source=source,
                         )
 
                         add_scan_stats(cycle_stats, scan_stats)
@@ -717,13 +822,14 @@ def main():
                         logger.exception(
                             "Keyword scan failed | "
                             f"Scan=#{scan} | "
+                            f"Marketplace={source} | "
                             f"Keyword={keyword}"
                         )
 
                         if not can_restart_browser(restart_count):
                             logger.warning(
                                 "Browser restart limit reached "
-                                "for this cycle; remaining keywords skipped"
+                                "for this cycle; remaining tasks skipped"
                             )
                             break
 
@@ -732,7 +838,7 @@ def main():
 
                 log_cycle_summary(
                     scan=scan,
-                    keyword_count=len(KEYWORDS),
+                    task_count=len(tasks),
                     cycle_stats=cycle_stats,
                 )
 
