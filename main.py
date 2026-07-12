@@ -599,6 +599,10 @@ def task_keyword(task):
     return task.get("keyword", "")
 
 
+def task_interval(task):
+    return task.get("interval", SCAN_INTERVAL)
+
+
 def active_watch_tasks():
     return [
         task
@@ -659,6 +663,57 @@ def validate_watch_tasks():
 
     if enabled_count == 0:
         raise ValueError("WATCH_TASKS has no enabled tasks")
+
+
+def initialize_task_states(tasks):
+    now = time.monotonic()
+
+    return [
+        {
+            "task": task,
+            "next_run_at": now,
+        }
+        for task in tasks
+    ]
+
+
+def due_task_states(task_states):
+    now = time.monotonic()
+
+    return [
+        task_state
+        for task_state in task_states
+        if task_state["next_run_at"] <= now
+    ]
+
+
+def mark_task_scanned(task_state):
+    task_state["next_run_at"] = (
+        time.monotonic()
+        + task_interval(task_state["task"])
+    )
+
+
+def seconds_until_next_task(task_states):
+    if not task_states:
+        return SCAN_INTERVAL
+
+    now = time.monotonic()
+    next_run_at = min(
+        task_state["next_run_at"]
+        for task_state in task_states
+    )
+
+    return max(0.0, next_run_at - now)
+
+
+def sleep_until_next_task(task_states):
+    delay = seconds_until_next_task(task_states)
+
+    if delay <= 0:
+        return
+
+    time.sleep(min(delay, 1.0))
 
 
 def validate_blocked_title_keywords():
@@ -744,6 +799,7 @@ def main():
     try:
         validate_runtime_config()
         tasks = active_watch_tasks()
+        task_states = initialize_task_states(tasks)
 
         db = Database(
             db_name=DATABASE_NAME,
@@ -787,16 +843,24 @@ def main():
             f"MaxPrice={MAX_PRICE} | "
             f"NotifyExistingOnStartup={NOTIFY_EXISTING_ON_STARTUP} | "
             f"UseSearchResultItemDetails={USE_SEARCH_RESULT_ITEM_DETAILS} | "
+            "Scheduler=per-task-interval | "
             f"Interval={SCAN_INTERVAL}s"
         )
 
         while True:
+            due_states = due_task_states(task_states)
+
+            if not due_states:
+                sleep_until_next_task(task_states)
+                continue
+
             scan += 1
             restart_count = 0
             cycle_stats = empty_scan_stats()
 
             try:
-                for task in tasks:
+                for task_state in due_states:
+                    task = task_state["task"]
                     source = task_source(task)
                     keyword = task_keyword(task).strip()
 
@@ -812,6 +876,7 @@ def main():
 
                         add_scan_stats(cycle_stats, scan_stats)
                         add_scan_stats(runtime_stats, scan_stats)
+                        mark_task_scanned(task_state)
 
                     except KeyboardInterrupt:
                         raise
@@ -819,6 +884,7 @@ def main():
                     except Exception:
                         cycle_stats["failed"] += 1
                         runtime_stats["failed"] += 1
+                        mark_task_scanned(task_state)
                         logger.exception(
                             "Keyword scan failed | "
                             f"Scan=#{scan} | "
@@ -838,11 +904,9 @@ def main():
 
                 log_cycle_summary(
                     scan=scan,
-                    task_count=len(tasks),
+                    task_count=len(due_states),
                     cycle_stats=cycle_stats,
                 )
-
-                time.sleep(SCAN_INTERVAL)
 
             except KeyboardInterrupt:
                 raise

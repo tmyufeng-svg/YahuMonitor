@@ -12,6 +12,8 @@
 - Added marketplace source storage for existing and future monitored items.
 - Yahoo scans now explicitly store and log `source=yahoo`.
 - Added `WATCH_TASKS` as the future configuration shape for source, keyword, interval, and category-aware monitoring.
+- Added lightweight per-task interval scheduling for enabled watch tasks.
+- Added an experimental Mercari public search scraper module, not yet wired into the main monitor loop.
 
 ## v0.8.0 - 2026-07-12
 

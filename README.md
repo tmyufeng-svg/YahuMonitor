@@ -15,6 +15,7 @@ Current milestone: `v0.8.0`
 - Browser restart after scan failures
 - Search-result item parsing to reduce detail page visits
 - Compact runtime and scan summary logs
+- Watch task configuration for future source/category scheduling
 - Graceful Ctrl+C shutdown
 
 ## Setup
@@ -58,11 +59,30 @@ Ctrl+C
 
 - `main.py` - monitor loop
 - `yahoo.py` - Yahoo Flea Market scraper
+- `mercari.py` - experimental Mercari public search scraper, not yet enabled in the main loop
 - `database.py` - SQLite storage and deduplication
 - `notifier.py` - Telegram notification sender
 - `browser_manager.py` - Playwright browser lifecycle
 - `config.py` - runtime configuration
 - `logger.py` - console and file logging
+
+## Watch Tasks
+
+`WATCH_TASKS` in `config.py` is the long-term configuration format:
+
+```python
+WATCH_TASKS = [
+    {
+        "source": "yahoo",
+        "keyword": "Contax T3",
+        "interval": 2,
+        "category_id": None,
+        "enabled": True,
+    },
+]
+```
+
+The current main loop supports Yahoo tasks. Mercari support is being developed conservatively through public search pages first.
 
 ## Safety Notes
 
