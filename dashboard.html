@@ -13,6 +13,7 @@
       --muted: #6b7280;
       --line: #d9dee7;
       --accent: #2563eb;
+      --accent-dark: #1d4ed8;
       --ok: #15803d;
       --off: #9ca3af;
     }
@@ -141,6 +142,37 @@
       max-width: 100%;
     }
 
+    button {
+      min-height: 36px;
+      padding: 0 14px;
+      border: 0;
+      border-radius: 6px;
+      background: var(--accent);
+      color: #ffffff;
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    button:disabled {
+      background: var(--off);
+      cursor: not-allowed;
+    }
+
+    button:hover:not(:disabled) {
+      background: var(--accent-dark);
+    }
+
+    select,
+    input[type="number"] {
+      width: 100%;
+      min-height: 32px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 4px 8px;
+      background: #ffffff;
+      color: var(--text);
+    }
+
     @media (max-width: 760px) {
       .toolbar {
         align-items: flex-start;
@@ -172,7 +204,10 @@
         <strong>App State</strong>
         <div class="muted">Generate with: python export_app_state.py --output app_state.json</div>
       </div>
-      <input id="stateFile" type="file" accept="application/json,.json">
+      <div>
+        <input id="stateFile" type="file" accept="application/json,.json">
+        <button id="downloadTasks" disabled>Download watch_tasks.json</button>
+      </div>
     </section>
 
     <section class="summary" aria-label="Summary">
@@ -198,14 +233,14 @@
       <table>
         <thead>
           <tr>
-            <th style="width: 22%">Task</th>
-            <th style="width: 10%">Status</th>
+            <th style="width: 20%">Task</th>
+            <th style="width: 9%">Status</th>
             <th style="width: 10%">Source</th>
-            <th style="width: 18%">Keyword</th>
-            <th style="width: 10%">Mode</th>
+            <th style="width: 17%">Keyword</th>
+            <th style="width: 12%">Mode</th>
             <th style="width: 10%">Interval</th>
             <th style="width: 10%">Category</th>
-            <th style="width: 10%">Limit</th>
+            <th style="width: 12%">Limit</th>
           </tr>
         </thead>
         <tbody id="taskRows">
@@ -219,7 +254,9 @@
 
   <script>
     const fileInput = document.getElementById("stateFile");
+    const downloadButton = document.getElementById("downloadTasks");
     const rows = document.getElementById("taskRows");
+    let currentState = null;
 
     function text(value) {
       return value === null || value === undefined || value === "" ? "-" : String(value);
@@ -229,7 +266,89 @@
       document.getElementById(id).textContent = text(value);
     }
 
+    function normalizeTask(task) {
+      const modeMap = {
+        "dry-run": { dry_run: true, notify: false },
+        silent: { dry_run: false, notify: false },
+        notify: { dry_run: false, notify: true }
+      };
+      const mode = task.mode || "notify";
+      const flags = modeMap[mode] || modeMap.notify;
+
+      return {
+        task_name: task.task_name || null,
+        source: task.source || "yahoo",
+        keyword: task.keyword || "",
+        interval: Number(task.interval) || 2,
+        category_key: task.category_key || "all",
+        category_id: task.category_id ?? null,
+        mode,
+        dry_run: flags.dry_run,
+        notify: flags.notify,
+        max_price: task.max_price ?? null,
+        blocked_title_keywords: task.blocked_title_keywords ?? null,
+        limit: task.limit === "" || task.limit === undefined ? null : task.limit,
+        enabled: task.enabled !== false
+      };
+    }
+
+    function updateSummary() {
+      if (!currentState) {
+        return;
+      }
+
+      const tasks = currentState.tasks || [];
+      const enabled = tasks.filter((task) => task.enabled !== false).length;
+
+      currentState.summary = {
+        ...(currentState.summary || {}),
+        total: tasks.length,
+        enabled,
+        disabled: tasks.length - enabled
+      };
+
+      setText("totalTasks", currentState.summary.total);
+      setText("enabledTasks", currentState.summary.enabled);
+      setText("disabledTasks", currentState.summary.disabled);
+    }
+
+    function updateTask(index, field, value) {
+      if (!currentState || !currentState.tasks[index]) {
+        return;
+      }
+
+      const task = currentState.tasks[index];
+
+      if (field === "enabled") {
+        task.enabled = value;
+      } else if (field === "interval") {
+        task.interval = Number(value) || 2;
+      } else if (field === "limit") {
+        task.limit = value === "" ? null : Number(value);
+      } else if (field === "mode") {
+        task.mode = value;
+        Object.assign(task, normalizeTask(task));
+      }
+
+      currentState.tasks[index] = normalizeTask(task);
+      updateSummary();
+    }
+
+    function taskModeOptions(selectedMode) {
+      const modes = currentState?.schema?.modes || {
+        "dry-run": {},
+        silent: {},
+        notify: {}
+      };
+
+      return Object.keys(modes).map((mode) => {
+        const selected = mode === selectedMode ? "selected" : "";
+        return `<option value="${mode}" ${selected}>${mode}</option>`;
+      }).join("");
+    }
+
     function renderState(state) {
+      currentState = state;
       const summary = state.summary || {};
       const app = state.app || {};
       const tasks = state.tasks || [];
@@ -239,6 +358,7 @@
       setText("enabledTasks", summary.enabled);
       setText("disabledTasks", summary.disabled);
       setText("version", app.version);
+      downloadButton.disabled = false;
 
       rows.innerHTML = "";
 
@@ -247,22 +367,69 @@
         return;
       }
 
-      for (const task of tasks) {
+      for (const [index, task] of tasks.entries()) {
         const enabled = task.enabled !== false;
         const row = document.createElement("tr");
         row.innerHTML = `
           <td>${text(task.task_name)}</td>
-          <td><span class="badge ${enabled ? "on" : "off"}">${enabled ? "Enabled" : "Disabled"}</span></td>
+          <td>
+            <select data-index="${index}" data-field="enabled">
+              <option value="true" ${enabled ? "selected" : ""}>Enabled</option>
+              <option value="false" ${enabled ? "" : "selected"}>Disabled</option>
+            </select>
+          </td>
           <td><span class="badge">${text(task.source)}</span></td>
           <td>${text(task.keyword)}</td>
-          <td>${text(task.mode)}</td>
-          <td>${text(task.interval)}s</td>
+          <td>
+            <select data-index="${index}" data-field="mode">
+              ${taskModeOptions(task.mode)}
+            </select>
+          </td>
+          <td>
+            <input data-index="${index}" data-field="interval" type="number" min="0.5" step="0.5" value="${text(task.interval)}">
+          </td>
           <td>${text(task.category_key)}</td>
-          <td>${text(task.limit)}</td>
+          <td>
+            <input data-index="${index}" data-field="limit" type="number" min="1" step="1" value="${task.limit ?? ""}" placeholder="-">
+          </td>
         `;
         rows.appendChild(row);
       }
     }
+
+    rows.addEventListener("change", (event) => {
+      const element = event.target;
+      const index = Number(element.dataset.index);
+      const field = element.dataset.field;
+
+      if (!field || Number.isNaN(index)) {
+        return;
+      }
+
+      const value = field === "enabled"
+        ? element.value === "true"
+        : element.value;
+
+      updateTask(index, field, value);
+    });
+
+    downloadButton.addEventListener("click", () => {
+      if (!currentState) {
+        return;
+      }
+
+      const tasks = (currentState.tasks || []).map(normalizeTask);
+      const blob = new Blob(
+        [JSON.stringify(tasks, null, 2) + "\n"],
+        { type: "application/json" }
+      );
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "watch_tasks.json";
+      link.click();
+      URL.revokeObjectURL(url);
+    });
 
     fileInput.addEventListener("change", async (event) => {
       const file = event.target.files[0];
