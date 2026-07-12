@@ -51,6 +51,7 @@ WATCH_TASKS = [
         "keyword": keyword,
         "interval": SCAN_INTERVAL,
         "category_id": None,
+        "dry_run": False,
         "enabled": True,
     }
     for keyword in KEYWORDS
@@ -60,6 +61,7 @@ WATCH_TASKS = [
         "keyword": "Contax T3",
         "interval": 10,
         "category_id": None,
+        "dry_run": True,
         "enabled": False,
     },
 ]

@@ -223,6 +223,7 @@ def scan_once(
     keyword,
     scan,
     source=YAHOO_SOURCE,
+    dry_run=False,
 ):
     start = time.perf_counter()
 
@@ -256,6 +257,7 @@ def scan_once(
         for candidate in candidates
         if candidate["id"] not in existing_ids
     ]
+    dry_run_count = 0
 
     for candidate in candidates:
         parse_error = candidate.get("parse_error")
@@ -270,7 +272,21 @@ def scan_once(
                 + 1
             )
 
-    if not notify_item:
+    if dry_run:
+        dry_run_count = len(new_candidates)
+
+        if dry_run_count:
+            sample_ids = ", ".join(
+                candidate["id"]
+                for candidate in new_candidates[:5]
+            )
+            logger.info(
+                f"[{keyword}] Dry run found {dry_run_count} "
+                f"new candidates | Marketplace={source} | "
+                f"Sample={sample_ids}"
+            )
+
+    elif not notify_item:
         baseline_count = save_startup_baseline_items(
             scraper=scraper,
             db=db,
@@ -342,6 +358,7 @@ def scan_once(
             "list_parse_failed": list_parse_failed_count,
             "list_parse_errors": list_parse_errors,
             "detail_fetches": detail_fetch_count,
+            "dry_run": dry_run_count,
             "elapsed": elapsed,
         },
     )
@@ -359,6 +376,7 @@ def scan_once(
         "list_parse_failed": list_parse_failed_count,
         "list_parse_errors": list_parse_errors,
         "detail_fetches": detail_fetch_count,
+        "dry_run": dry_run_count,
         "elapsed": elapsed,
     }
 
@@ -377,6 +395,7 @@ def empty_scan_stats():
         "list_parse_failed": 0,
         "list_parse_errors": {},
         "detail_fetches": 0,
+        "dry_run": 0,
         "elapsed": 0.0,
     }
 
@@ -417,6 +436,7 @@ def log_scan_summary(scan, keyword, source, stats):
             f"New={stats['new']} | "
             f"Ignored={stats['ignored']} | "
             f"Failed={stats['failed']} | "
+            f"DryRun={stats['dry_run']} | "
             f"DetailFetches={stats['detail_fetches']} | "
             f"Time={stats['elapsed']:.2f}s"
         )
@@ -431,6 +451,7 @@ def log_scan_summary(scan, keyword, source, stats):
         f"Ignored={stats['ignored']} | "
         f"Baseline={stats['baseline']} | "
         f"Failed={stats['failed']} | "
+        f"DryRun={stats['dry_run']} | "
         f"SearchDetails={stats['search_details']} | "
         f"SearchParseFailed={stats['search_parse_failed']} | "
         f"SearchParseErrors={format_error_counts(stats['search_parse_errors'])} | "
@@ -451,6 +472,7 @@ def log_cycle_summary(scan, task_count, cycle_stats):
             f"New={cycle_stats['new']} | "
             f"Ignored={cycle_stats['ignored']} | "
             f"Failed={cycle_stats['failed']} | "
+            f"DryRun={cycle_stats['dry_run']} | "
             f"DetailFetches={cycle_stats['detail_fetches']} | "
             f"Time={cycle_stats['elapsed']:.2f}s"
         )
@@ -464,6 +486,7 @@ def log_cycle_summary(scan, task_count, cycle_stats):
         f"Ignored={cycle_stats['ignored']} | "
         f"Baseline={cycle_stats['baseline']} | "
         f"Failed={cycle_stats['failed']} | "
+        f"DryRun={cycle_stats['dry_run']} | "
         f"SearchDetails={cycle_stats['search_details']} | "
         f"SearchParseFailed={cycle_stats['search_parse_failed']} | "
         f"SearchParseErrors={format_error_counts(cycle_stats['search_parse_errors'])} | "
@@ -485,6 +508,7 @@ def log_runtime_summary(scan, uptime, runtime_stats):
             f"New={runtime_stats['new']} | "
             f"Ignored={runtime_stats['ignored']} | "
             f"Failed={runtime_stats['failed']} | "
+            f"DryRun={runtime_stats['dry_run']} | "
             f"DetailFetches={runtime_stats['detail_fetches']} | "
             f"ScanTime={runtime_stats['elapsed']:.2f}s"
         )
@@ -499,6 +523,7 @@ def log_runtime_summary(scan, uptime, runtime_stats):
         f"Ignored={runtime_stats['ignored']} | "
         f"Baseline={runtime_stats['baseline']} | "
         f"Failed={runtime_stats['failed']} | "
+        f"DryRun={runtime_stats['dry_run']} | "
         f"SearchDetails={runtime_stats['search_details']} | "
         f"SearchParseFailed={runtime_stats['search_parse_failed']} | "
         f"SearchParseErrors={format_error_counts(runtime_stats['search_parse_errors'])} | "
@@ -606,6 +631,10 @@ def task_interval(task):
     return task.get("interval", SCAN_INTERVAL)
 
 
+def task_dry_run(task):
+    return task.get("dry_run", False)
+
+
 def active_watch_tasks():
     return [
         task
@@ -663,6 +692,13 @@ def validate_watch_tasks():
             f"WATCH_TASKS[{index}].interval",
             interval,
         )
+
+        dry_run = task_dry_run(task)
+
+        if not isinstance(dry_run, bool):
+            raise ValueError(
+                f"WATCH_TASKS[{index}].dry_run must be True or False"
+            )
 
     if enabled_count == 0:
         raise ValueError("WATCH_TASKS has no enabled tasks")
@@ -882,6 +918,7 @@ def main():
                             keyword=keyword,
                             scan=scan,
                             source=source,
+                            dry_run=task_dry_run(task),
                         )
 
                         add_scan_stats(cycle_stats, scan_stats)

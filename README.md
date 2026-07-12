@@ -78,12 +78,15 @@ WATCH_TASKS = [
         "keyword": "Contax T3",
         "interval": 2,
         "category_id": None,
+        "dry_run": False,
         "enabled": True,
     },
 ]
 ```
 
 The current main loop supports Yahoo tasks and can dispatch Mercari tasks when explicitly enabled. Mercari remains disabled by default while public search parsing is tested.
+
+Set `dry_run` to `True` for a task when you want to test parsing inside the main loop without sending Telegram notifications or writing new items to the database.
 
 ## Mercari Probe
 

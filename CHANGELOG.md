@@ -17,6 +17,7 @@
 - Added a Mercari probe script for manual public search parser testing without database writes or Telegram notifications.
 - Mercari probe now prints page diagnostics when no item links are found.
 - Added disabled Mercari watch task support in the main source dispatch path.
+- Added task-level dry-run mode for safe marketplace parser testing inside the main loop.
 
 ### Fixed
 
