@@ -151,7 +151,10 @@ class YahooScraper:
     def candidate_has_item(self, candidate):
         return candidate["item"] is not None
 
-    def search_candidates(self, keyword):
+    def reached_limit(self, ordered_ids, limit):
+        return limit is not None and len(ordered_ids) >= limit
+
+    def search_candidates(self, keyword, limit=None):
 
         self.page.goto(
             self.build_search_url(keyword),
@@ -172,6 +175,9 @@ class YahooScraper:
                 continue
 
             if item_id not in candidates_by_id:
+                if self.reached_limit(ordered_ids, limit):
+                    break
+
                 candidates_by_id[item_id] = self.empty_candidate(
                     item_id
                 )
@@ -199,7 +205,7 @@ class YahooScraper:
             for item_id in ordered_ids
         ]
 
-    def search(self, keyword):
+    def search(self, keyword, limit=None):
 
         self.page.goto(
             self.build_search_url(keyword),
@@ -223,6 +229,9 @@ class YahooScraper:
 
             seen.add(item_id)
             items.append(item_id)
+
+            if limit is not None and len(items) >= limit:
+                break
 
         return items
 

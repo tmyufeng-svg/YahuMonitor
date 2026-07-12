@@ -184,7 +184,10 @@ class MercariScraper:
 
         raise ValueError("search result text is empty")
 
-    def search_candidates(self, keyword):
+    def reached_limit(self, ordered_ids, limit):
+        return limit is not None and len(ordered_ids) >= limit
+
+    def search_candidates(self, keyword, limit=None):
         self.page.goto(
             self.build_search_url(keyword),
             wait_until="domcontentloaded",
@@ -206,6 +209,9 @@ class MercariScraper:
                 continue
 
             if item_id not in candidates_by_id:
+                if self.reached_limit(ordered_ids, limit):
+                    break
+
                 candidates_by_id[item_id] = self.empty_candidate(
                     item_id
                 )
@@ -231,6 +237,14 @@ class MercariScraper:
         return [
             candidates_by_id[item_id]
             for item_id in ordered_ids
+        ]
+
+    def search(self, keyword, limit=None):
+        candidates = self.search_candidates(keyword, limit=limit)
+
+        return [
+            candidate["id"]
+            for candidate in candidates
         ]
 
     def page_diagnostics(self, sample_limit=20):

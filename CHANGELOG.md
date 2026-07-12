@@ -27,6 +27,8 @@
 - Added `config_check.py` for local configuration validation without browser startup.
 - Added Mercari dry-run, silent, and notification task templates.
 - Documented the recommended Mercari activation flow.
+- Added task-level search result limits for safer marketplace trials.
+- Mercari probe `--limit` now limits parsed candidates, not only printed output.
 
 ### Fixed
 

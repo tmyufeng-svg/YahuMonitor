@@ -50,6 +50,7 @@ WATCH_TASKS = [
         "notify": True,
         "max_price": None,
         "blocked_title_keywords": None,
+        "limit": None,
         "enabled": True,
     },
     {
@@ -62,6 +63,7 @@ WATCH_TASKS = [
         "notify": True,
         "max_price": None,
         "blocked_title_keywords": None,
+        "limit": None,
         "enabled": True,
     },
     {
@@ -74,6 +76,7 @@ WATCH_TASKS = [
         "notify": False,
         "max_price": None,
         "blocked_title_keywords": None,
+        "limit": 15,
         "enabled": False,
     },
 ]

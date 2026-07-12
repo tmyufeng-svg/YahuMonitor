@@ -212,11 +212,11 @@ def should_notify_items(scan):
     return scan > 1 or NOTIFY_EXISTING_ON_STARTUP
 
 
-def search_candidates(scraper, keyword):
+def search_candidates(scraper, keyword, limit=None):
     if USE_SEARCH_RESULT_ITEM_DETAILS:
-        return scraper.search_candidates(keyword)
+        return scraper.search_candidates(keyword, limit=limit)
 
-    item_ids = scraper.search(keyword)
+    item_ids = scraper.search(keyword, limit=limit)
 
     return [
         {
@@ -298,6 +298,7 @@ def scan_once(
     task_name=None,
     dry_run=False,
     notify=True,
+    limit=None,
     max_price=MAX_PRICE,
     blocked_title_keywords=None,
 ):
@@ -306,6 +307,7 @@ def scan_once(
     candidates = search_candidates(
         scraper=scraper,
         keyword=keyword,
+        limit=limit,
     )
     item_ids = [
         candidate["id"]
@@ -756,6 +758,10 @@ def task_max_price(task):
     return task.get("max_price", MAX_PRICE)
 
 
+def task_limit(task):
+    return task.get("limit", None)
+
+
 def task_blocked_title_keywords(task):
     task_keywords = task.get("blocked_title_keywords", None)
 
@@ -785,6 +791,7 @@ def log_watch_tasks(tasks):
             f"Interval={task_interval(task)}s | "
             f"DryRun={task_dry_run(task)} | "
             f"Notify={task_notify(task)} | "
+            f"Limit={task_limit(task)} | "
             f"MaxPrice={task_max_price(task)} | "
             f"BlockedTitleKeywords="
             f"{len(task_blocked_title_keywords(task))}"
@@ -868,6 +875,11 @@ def validate_watch_tasks():
         validate_optional_positive_integer(
             f"WATCH_TASKS[{index}].max_price",
             task_max_price(task),
+        )
+
+        validate_optional_positive_integer(
+            f"WATCH_TASKS[{index}].limit",
+            task_limit(task),
         )
 
         blocked_keywords = task_blocked_title_keywords(task)
@@ -1119,6 +1131,7 @@ def main():
                             task_name=name,
                             dry_run=task_dry_run(task),
                             notify=task_notify(task),
+                            limit=task_limit(task),
                             max_price=task_max_price(task),
                             blocked_title_keywords=task_blocked_title_keywords(
                                 task

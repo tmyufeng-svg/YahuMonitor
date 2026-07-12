@@ -49,6 +49,7 @@ WATCH_TASKS = [
         "notify": True,
         "max_price": None,
         "blocked_title_keywords": None,
+        "limit": None,
         "enabled": True,
     },
 ]
@@ -103,6 +104,7 @@ WATCH_TASKS = [
         "notify": True,
         "max_price": None,
         "blocked_title_keywords": None,
+        "limit": None,
         "enabled": True,
     },
 ]
@@ -120,6 +122,8 @@ Set `notify` to `False` for a task when you want to save new items to the databa
 
 Task-level `max_price` and `blocked_title_keywords` override the global filters when they are set. Use `None` to keep the global default.
 
+Task-level `limit` controls how many unique search results are parsed per scan. Use `None` for no limit, or a small integer such as `15` when testing Mercari.
+
 ## Mercari Probe
 
 `mercari_probe.py` can be used to test public Mercari search parsing without writing to the database or sending Telegram messages:
@@ -128,7 +132,7 @@ Task-level `max_price` and `blocked_title_keywords` override the global filters 
 python mercari_probe.py "Contax T3"
 ```
 
-Limit printed results:
+Limit parsed results:
 
 ```powershell
 python mercari_probe.py "Contax T3" --limit 5
@@ -151,6 +155,7 @@ Safe parser test inside the main loop:
     "notify": False,
     "max_price": None,
     "blocked_title_keywords": None,
+    "limit": 15,
     "enabled": True,
 }
 ```
@@ -168,6 +173,7 @@ Database-only trial without phone notifications:
     "notify": False,
     "max_price": None,
     "blocked_title_keywords": None,
+    "limit": 15,
     "enabled": True,
 }
 ```
@@ -185,6 +191,7 @@ Live notification mode:
     "notify": True,
     "max_price": None,
     "blocked_title_keywords": None,
+    "limit": 15,
     "enabled": True,
 }
 ```
