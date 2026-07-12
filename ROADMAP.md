@@ -1,8 +1,8 @@
 # Yahoo Monitor Roadmap
 
-## Current Version: 0.9.3-beta
+## Current Version: 0.9.4-beta
 
-This version is the external watch task configuration beta.
+This version is the watch task editor beta.
 
 Before calling the project V1.0, run:
 
@@ -24,6 +24,7 @@ The immediate goal is to make configured watch tasks run safely and repeatably:
 - Task-level interval, limit, category, price, and title filters
 - Stable task `mode` field for future UI editing
 - Editable `watch_tasks.json` task configuration for future front-end work
+- Safe local task editor for listing, enabling, disabling, changing modes, and adding tasks
 
 Useful test commands:
 
@@ -55,6 +56,7 @@ Minimum V1.0 gate:
 - Mercari notify mode is tested with controlled settings.
 - The setup flow in `README.md` works from a fresh clone.
 - `watch_tasks.json` can be edited without touching Python files.
+- `task_editor.py` can make common task changes without hand-editing JSON.
 - `release_check.py` passes.
 
 ## V1.x Target: Better Operator Experience

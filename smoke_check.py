@@ -8,6 +8,7 @@ FILES_TO_COMPILE = [
     "config_check.py",
     "release_check.py",
     "task_config.py",
+    "task_editor.py",
     "task_schema.py",
     "export_task_schema.py",
     "categories.py",

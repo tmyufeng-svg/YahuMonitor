@@ -1,6 +1,6 @@
 APP_NAME = "Yahoo Monitor"
-VERSION = "0.9.3-beta"
-MILESTONE = "V0.9 external watch task config beta"
+VERSION = "0.9.4-beta"
+MILESTONE = "V0.9 watch task editor beta"
 
 
 def version_label():
