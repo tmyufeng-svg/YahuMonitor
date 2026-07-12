@@ -134,6 +134,63 @@ Limit printed results:
 python mercari_probe.py "Contax T3" --limit 5
 ```
 
+## Mercari Task Modes
+
+Mercari is available as an optional public-search task. Keep it disabled until probe output looks correct.
+
+Safe parser test inside the main loop:
+
+```python
+{
+    "task_name": "Mercari dry run | Contax T3",
+    "source": "mercari",
+    "keyword": "Contax T3",
+    "interval": 10,
+    "category_id": None,
+    "dry_run": True,
+    "notify": False,
+    "max_price": None,
+    "blocked_title_keywords": None,
+    "enabled": True,
+}
+```
+
+Database-only trial without phone notifications:
+
+```python
+{
+    "task_name": "Mercari silent | Contax T3",
+    "source": "mercari",
+    "keyword": "Contax T3",
+    "interval": 10,
+    "category_id": None,
+    "dry_run": False,
+    "notify": False,
+    "max_price": None,
+    "blocked_title_keywords": None,
+    "enabled": True,
+}
+```
+
+Live notification mode:
+
+```python
+{
+    "task_name": "Mercari notify | Contax T3",
+    "source": "mercari",
+    "keyword": "Contax T3",
+    "interval": 10,
+    "category_id": None,
+    "dry_run": False,
+    "notify": True,
+    "max_price": None,
+    "blocked_title_keywords": None,
+    "enabled": True,
+}
+```
+
+Recommended order: probe first, then dry run, then silent mode, then notification mode.
+
 ## Safety Notes
 
 Do not commit `.env`, `items.db`, or logs.

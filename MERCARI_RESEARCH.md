@@ -14,6 +14,26 @@ Mercari can be added as a second monitored marketplace, but the first V0.9 imple
 
 This keeps the project aligned with a notification tool rather than an account automation or platform-bypass tool.
 
+## Current Implementation Status
+
+As of 2026-07-12:
+
+- `mercari.py` can parse public Mercari search result links.
+- `mercari_probe.py` can test public search parsing without Telegram or database writes.
+- Search result title parsing handles split price/title lines such as `¥`, `4,900`, and the item title on separate lines.
+- The main monitor can dispatch `source="mercari"` tasks.
+- Mercari tasks are disabled by default in `config.py`.
+- `config.example.py` includes dry-run, silent, and notification-mode Mercari task templates.
+
+Recommended activation order:
+
+```text
+mercari_probe.py
+  -> WATCH_TASKS dry_run=True
+  -> dry_run=False, notify=False
+  -> dry_run=False, notify=True
+```
+
 ## What Is Publicly Observable
 
 The public search page is accessible at URLs like:

@@ -25,6 +25,8 @@
 - Changed `WATCH_TASKS` from keyword-generated config to explicit task config.
 - Added `config.example.py` as a reference configuration.
 - Added `config_check.py` for local configuration validation without browser startup.
+- Added Mercari dry-run, silent, and notification task templates.
+- Documented the recommended Mercari activation flow.
 
 ### Fixed
 

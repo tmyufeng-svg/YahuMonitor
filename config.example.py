@@ -75,6 +75,30 @@ WATCH_TASKS = [
         "blocked_title_keywords": None,
         "enabled": False,
     },
+    {
+        "task_name": "Mercari silent | Contax T3",
+        "source": "mercari",
+        "keyword": "Contax T3",
+        "interval": 10,
+        "category_id": None,
+        "dry_run": False,
+        "notify": False,
+        "max_price": None,
+        "blocked_title_keywords": None,
+        "enabled": False,
+    },
+    {
+        "task_name": "Mercari notify | Contax T3",
+        "source": "mercari",
+        "keyword": "Contax T3",
+        "interval": 10,
+        "category_id": None,
+        "dry_run": False,
+        "notify": True,
+        "max_price": None,
+        "blocked_title_keywords": None,
+        "enabled": False,
+    },
 ]
 
 
