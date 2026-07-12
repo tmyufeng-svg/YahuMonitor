@@ -4,7 +4,7 @@ Yahoo Monitor is a Python monitor for Yahoo Flea Market search results.
 
 It scans configured keywords, stores seen items in SQLite, and sends new item notifications to Telegram.
 
-Current milestone: `v1.1.1-beta`
+Current milestone: `v1.1.3-beta`
 
 V1.0 is a stable search-based monitor. It watches public search results and sends direct item links. Earlier-than-search detection is future V2.x research.
 
@@ -19,6 +19,8 @@ V1.0 is a stable search-based monitor. It watches public search results and send
 - Compact runtime and scan summary logs
 - Watch task configuration for future source/category scheduling
 - Disabled Mercari task support for conservative public-search testing
+- Mercari result stabilization wait to reduce premature empty scans
+- Mercari empty-result retry and loading diagnostics
 - Graceful Ctrl+C shutdown
 
 ## Setup

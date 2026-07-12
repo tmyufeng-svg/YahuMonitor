@@ -370,6 +370,7 @@ def scan_once(
         limit=limit,
         category_id=category_id,
     )
+    load_stats = getattr(scraper, "last_load_stats", {}) or {}
     item_ids = [
         candidate["id"]
         for candidate in candidates
@@ -517,6 +518,12 @@ def scan_once(
             "list_parse_errors": list_parse_errors,
             "detail_fetches": detail_fetch_count,
             "dry_run": dry_run_count,
+            "load_attempts": load_stats.get("attempts", 0),
+            "empty_loads": load_stats.get("empty_loads", 0),
+            "final_item_link_count": load_stats.get(
+                "final_item_link_count",
+                0,
+            ),
             "elapsed": elapsed,
         },
     )
@@ -536,6 +543,12 @@ def scan_once(
         "list_parse_errors": list_parse_errors,
         "detail_fetches": detail_fetch_count,
         "dry_run": dry_run_count,
+        "load_attempts": load_stats.get("attempts", 0),
+        "empty_loads": load_stats.get("empty_loads", 0),
+        "final_item_link_count": load_stats.get(
+            "final_item_link_count",
+            0,
+        ),
         "elapsed": elapsed,
     }
 
@@ -556,6 +569,9 @@ def empty_scan_stats():
         "list_parse_errors": {},
         "detail_fetches": 0,
         "dry_run": 0,
+        "load_attempts": 0,
+        "empty_loads": 0,
+        "final_item_link_count": 0,
         "elapsed": 0.0,
     }
 
@@ -607,6 +623,9 @@ def log_scan_summary(
             f"Silent={stats['silent']} | "
             f"Failed={stats['failed']} | "
             f"DryRun={stats['dry_run']} | "
+            f"LoadAttempts={stats['load_attempts']} | "
+            f"EmptyLoads={stats['empty_loads']} | "
+            f"FinalLinks={stats['final_item_link_count']} | "
             f"DetailFetches={stats['detail_fetches']} | "
             f"Time={stats['elapsed']:.2f}s"
         )
@@ -625,6 +644,9 @@ def log_scan_summary(
         f"Silent={stats['silent']} | "
         f"Failed={stats['failed']} | "
         f"DryRun={stats['dry_run']} | "
+        f"LoadAttempts={stats['load_attempts']} | "
+        f"EmptyLoads={stats['empty_loads']} | "
+        f"FinalLinks={stats['final_item_link_count']} | "
         f"SearchDetails={stats['search_details']} | "
         f"SearchParseFailed={stats['search_parse_failed']} | "
         f"SearchParseErrors={format_error_counts(stats['search_parse_errors'])} | "
@@ -647,6 +669,9 @@ def log_cycle_summary(scan, task_count, cycle_stats):
             f"Silent={cycle_stats['silent']} | "
             f"Failed={cycle_stats['failed']} | "
             f"DryRun={cycle_stats['dry_run']} | "
+            f"LoadAttempts={cycle_stats['load_attempts']} | "
+            f"EmptyLoads={cycle_stats['empty_loads']} | "
+            f"FinalLinks={cycle_stats['final_item_link_count']} | "
             f"DetailFetches={cycle_stats['detail_fetches']} | "
             f"Time={cycle_stats['elapsed']:.2f}s"
         )
@@ -662,6 +687,9 @@ def log_cycle_summary(scan, task_count, cycle_stats):
         f"Silent={cycle_stats['silent']} | "
         f"Failed={cycle_stats['failed']} | "
         f"DryRun={cycle_stats['dry_run']} | "
+        f"LoadAttempts={cycle_stats['load_attempts']} | "
+        f"EmptyLoads={cycle_stats['empty_loads']} | "
+        f"FinalLinks={cycle_stats['final_item_link_count']} | "
         f"SearchDetails={cycle_stats['search_details']} | "
         f"SearchParseFailed={cycle_stats['search_parse_failed']} | "
         f"SearchParseErrors={format_error_counts(cycle_stats['search_parse_errors'])} | "
@@ -685,6 +713,9 @@ def log_runtime_summary(scan, uptime, runtime_stats):
             f"Silent={runtime_stats['silent']} | "
             f"Failed={runtime_stats['failed']} | "
             f"DryRun={runtime_stats['dry_run']} | "
+            f"LoadAttempts={runtime_stats['load_attempts']} | "
+            f"EmptyLoads={runtime_stats['empty_loads']} | "
+            f"FinalLinks={runtime_stats['final_item_link_count']} | "
             f"DetailFetches={runtime_stats['detail_fetches']} | "
             f"ScanTime={runtime_stats['elapsed']:.2f}s"
         )
@@ -701,6 +732,9 @@ def log_runtime_summary(scan, uptime, runtime_stats):
         f"Silent={runtime_stats['silent']} | "
         f"Failed={runtime_stats['failed']} | "
         f"DryRun={runtime_stats['dry_run']} | "
+        f"LoadAttempts={runtime_stats['load_attempts']} | "
+        f"EmptyLoads={runtime_stats['empty_loads']} | "
+        f"FinalLinks={runtime_stats['final_item_link_count']} | "
         f"SearchDetails={runtime_stats['search_details']} | "
         f"SearchParseFailed={runtime_stats['search_parse_failed']} | "
         f"SearchParseErrors={format_error_counts(runtime_stats['search_parse_errors'])} | "

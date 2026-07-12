@@ -1,8 +1,8 @@
 # Yahoo Monitor Roadmap
 
-## Current Version: 1.1.1-beta
+## Current Version: 1.1.3-beta
 
-This version expands dashboard-based task editing.
+This version retries Mercari public-search pages that render no item links and adds loading diagnostics to scan logs.
 
 Before treating this beta as stable, run:
 
@@ -31,6 +31,8 @@ The immediate goal is to make configured watch tasks run safely and repeatably:
 - Dashboard editing for source, keyword, enabled status, mode, interval, and limit with JSON download
 - Dashboard add/delete task controls
 - Dashboard editing for blocked title keywords and price range
+- Mercari search-result stabilization wait to reduce premature empty scans
+- Mercari empty-result retry with `LoadAttempts`, `EmptyLoads`, and `FinalLinks` scan logging
 - V1.0 release checklist and stronger release readiness checks
 
 Useful test commands:

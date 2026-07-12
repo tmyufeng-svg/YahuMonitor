@@ -1,5 +1,19 @@
 # Changelog
 
+## v1.1.3-beta
+
+### Fixed
+
+- Mercari search retries once when a search page renders no item links.
+- Scan logs now include result-loading diagnostics: `LoadAttempts`, `EmptyLoads`, and `FinalLinks`.
+
+## v1.1.2-beta
+
+### Fixed
+
+- Mercari search now waits for item link counts to stabilize before parsing results.
+- Reduced false `Found=0` scans caused by Mercari pages still rendering search results.
+
 ## v1.1.1-beta
 
 ### Added

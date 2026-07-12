@@ -1,4 +1,5 @@
 import re
+import time
 from urllib.parse import quote_plus
 
 from playwright.sync_api import Page
@@ -10,9 +11,22 @@ class MercariScraper:
 
     SOURCE = "mercari"
     ITEM_LINK_SELECTOR = 'a[href*="/item/"]'
+    RESULT_WAIT_TIMEOUT_MS = 12000
+    RESULT_POLL_INTERVAL_MS = 500
+    RESULT_STABLE_POLLS = 2
+    EMPTY_RESULT_RETRIES = 1
+    EMPTY_RESULT_RETRY_DELAY_MS = 1000
 
     def __init__(self, page: Page):
         self.page = page
+        self.last_load_stats = self.empty_load_stats()
+
+    def empty_load_stats(self):
+        return {
+            "attempts": 0,
+            "empty_loads": 0,
+            "final_item_link_count": 0,
+        }
 
     def build_search_url(self, keyword, category_id=None):
         encoded_keyword = quote_plus(keyword)
@@ -26,16 +40,42 @@ class MercariScraper:
 
         return url
 
-    def wait_for_search_results(self, timeout=10000):
+    def count_item_links(self):
         try:
-            self.page.locator(self.ITEM_LINK_SELECTOR).first.wait_for(
-                state="attached",
-                timeout=timeout,
-            )
-            return True
+            return self.page.locator(self.ITEM_LINK_SELECTOR).count()
 
         except Exception:
-            return False
+            return 0
+
+    def wait_for_search_results(
+        self,
+        timeout_ms=RESULT_WAIT_TIMEOUT_MS,
+        poll_interval_ms=RESULT_POLL_INTERVAL_MS,
+        stable_polls=RESULT_STABLE_POLLS,
+    ):
+        deadline = time.monotonic() + (timeout_ms / 1000)
+        last_count = None
+        stable_count = 0
+
+        while time.monotonic() < deadline:
+            current_count = self.count_item_links()
+
+            if current_count > 0 and current_count == last_count:
+                stable_count += 1
+
+                if stable_count >= stable_polls:
+                    return True
+
+            elif current_count > 0:
+                stable_count = 1
+
+            else:
+                stable_count = 0
+
+            last_count = current_count
+            self.page.wait_for_timeout(poll_interval_ms)
+
+        return self.count_item_links() > 0
 
     def build_item_url(self, item_id):
         return f"https://jp.mercari.com/item/{item_id}"
@@ -191,21 +231,52 @@ class MercariScraper:
     def reached_limit(self, ordered_ids, limit):
         return limit is not None and len(ordered_ids) >= limit
 
+    def load_search_page(self, url):
+        self.page.goto(
+            url,
+            wait_until="domcontentloaded",
+        )
+
+        loaded = self.wait_for_search_results()
+        item_link_count = self.count_item_links()
+
+        return loaded or item_link_count > 0, item_link_count
+
+    def load_search_page_with_retry(self, url):
+        self.last_load_stats = self.empty_load_stats()
+
+        for attempt in range(self.EMPTY_RESULT_RETRIES + 1):
+            self.last_load_stats["attempts"] += 1
+
+            loaded, item_link_count = self.load_search_page(url)
+            self.last_load_stats["final_item_link_count"] = (
+                item_link_count
+            )
+
+            if loaded:
+                return True
+
+            self.last_load_stats["empty_loads"] += 1
+
+            if attempt < self.EMPTY_RESULT_RETRIES:
+                self.page.wait_for_timeout(
+                    self.EMPTY_RESULT_RETRY_DELAY_MS
+                )
+
+        return False
+
     def search_candidates(
         self,
         keyword,
         limit=None,
         category_id=None,
     ):
-        self.page.goto(
+        self.load_search_page_with_retry(
             self.build_search_url(
                 keyword,
                 category_id=category_id,
-            ),
-            wait_until="domcontentloaded",
+            )
         )
-
-        self.wait_for_search_results()
 
         links = self.page.locator(self.ITEM_LINK_SELECTOR)
 
