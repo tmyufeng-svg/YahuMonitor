@@ -67,6 +67,7 @@ def process_item(
     keyword,
     listing_item=None,
     source=YAHOO_SOURCE,
+    notify=True,
     max_price=MAX_PRICE,
     blocked_title_keywords=None,
 ):
@@ -141,6 +142,28 @@ def process_item(
 
             return {
                 "status": "ignored",
+                "detail_fetched": detail_fetched,
+            }
+
+        if not notify:
+            db.save(
+                item=item,
+                keyword=keyword,
+                source=source,
+                status="silent",
+                ignore_reason="notify_disabled",
+            )
+            logger.info(
+                f"[{keyword}] Saved without notification {item.id} | "
+                f"Marketplace={source} | "
+                f"Source={item_source} | "
+                f"DetectedAt={detected_at} | "
+                f"Price={item.price:,} | "
+                f"Title={item.title}"
+            )
+
+            return {
+                "status": "silent",
                 "detail_fetched": detail_fetched,
             }
 
@@ -264,6 +287,7 @@ def scan_once(
     scan,
     source=YAHOO_SOURCE,
     dry_run=False,
+    notify=True,
     max_price=MAX_PRICE,
     blocked_title_keywords=None,
 ):
@@ -285,6 +309,7 @@ def scan_once(
     new_count = 0
     ignored_count = 0
     baseline_count = 0
+    silent_count = 0
     failed_count = 0
     search_detail_count = 0
     search_parse_failed_count = 0
@@ -366,6 +391,7 @@ def scan_once(
                 keyword=keyword,
                 listing_item=listing_item,
                 source=source,
+                notify=notify,
                 max_price=max_price,
                 blocked_title_keywords=blocked_title_keywords,
             )
@@ -385,6 +411,9 @@ def scan_once(
             elif result["status"] == "baseline":
                 baseline_count += 1
 
+            elif result["status"] == "silent":
+                silent_count += 1
+
             elif result["status"] == "failed":
                 failed_count += 1
 
@@ -399,6 +428,7 @@ def scan_once(
             "new": new_count,
             "ignored": ignored_count,
             "baseline": baseline_count,
+            "silent": silent_count,
             "failed": failed_count,
             "search_details": search_detail_count,
             "search_parse_failed": search_parse_failed_count,
@@ -417,6 +447,7 @@ def scan_once(
         "new": new_count,
         "ignored": ignored_count,
         "baseline": baseline_count,
+        "silent": silent_count,
         "failed": failed_count,
         "search_details": search_detail_count,
         "search_parse_failed": search_parse_failed_count,
@@ -436,6 +467,7 @@ def empty_scan_stats():
         "new": 0,
         "ignored": 0,
         "baseline": 0,
+        "silent": 0,
         "failed": 0,
         "search_details": 0,
         "search_parse_failed": 0,
@@ -484,6 +516,7 @@ def log_scan_summary(scan, keyword, source, stats):
             f"Found={stats['found']} | "
             f"New={stats['new']} | "
             f"Ignored={stats['ignored']} | "
+            f"Silent={stats['silent']} | "
             f"Failed={stats['failed']} | "
             f"DryRun={stats['dry_run']} | "
             f"DetailFetches={stats['detail_fetches']} | "
@@ -499,6 +532,7 @@ def log_scan_summary(scan, keyword, source, stats):
         f"New={stats['new']} | "
         f"Ignored={stats['ignored']} | "
         f"Baseline={stats['baseline']} | "
+        f"Silent={stats['silent']} | "
         f"Failed={stats['failed']} | "
         f"DryRun={stats['dry_run']} | "
         f"SearchDetails={stats['search_details']} | "
@@ -520,6 +554,7 @@ def log_cycle_summary(scan, task_count, cycle_stats):
             f"Found={cycle_stats['found']} | "
             f"New={cycle_stats['new']} | "
             f"Ignored={cycle_stats['ignored']} | "
+            f"Silent={cycle_stats['silent']} | "
             f"Failed={cycle_stats['failed']} | "
             f"DryRun={cycle_stats['dry_run']} | "
             f"DetailFetches={cycle_stats['detail_fetches']} | "
@@ -534,6 +569,7 @@ def log_cycle_summary(scan, task_count, cycle_stats):
         f"New={cycle_stats['new']} | "
         f"Ignored={cycle_stats['ignored']} | "
         f"Baseline={cycle_stats['baseline']} | "
+        f"Silent={cycle_stats['silent']} | "
         f"Failed={cycle_stats['failed']} | "
         f"DryRun={cycle_stats['dry_run']} | "
         f"SearchDetails={cycle_stats['search_details']} | "
@@ -556,6 +592,7 @@ def log_runtime_summary(scan, uptime, runtime_stats):
             f"Found={runtime_stats['found']} | "
             f"New={runtime_stats['new']} | "
             f"Ignored={runtime_stats['ignored']} | "
+            f"Silent={runtime_stats['silent']} | "
             f"Failed={runtime_stats['failed']} | "
             f"DryRun={runtime_stats['dry_run']} | "
             f"DetailFetches={runtime_stats['detail_fetches']} | "
@@ -571,6 +608,7 @@ def log_runtime_summary(scan, uptime, runtime_stats):
         f"New={runtime_stats['new']} | "
         f"Ignored={runtime_stats['ignored']} | "
         f"Baseline={runtime_stats['baseline']} | "
+        f"Silent={runtime_stats['silent']} | "
         f"Failed={runtime_stats['failed']} | "
         f"DryRun={runtime_stats['dry_run']} | "
         f"SearchDetails={runtime_stats['search_details']} | "
@@ -607,6 +645,7 @@ def log_keyword_database_counts(db):
             f"Notified={counts['notified']} | "
             f"Ignored={counts['ignored']} | "
             f"Baseline={counts['baseline']} | "
+            f"Silent={counts['silent']} | "
             f"Other={counts['other']}"
         )
 
@@ -682,6 +721,10 @@ def task_interval(task):
 
 def task_dry_run(task):
     return task.get("dry_run", False)
+
+
+def task_notify(task):
+    return task.get("notify", True)
 
 
 def task_max_price(task):
@@ -760,6 +803,13 @@ def validate_watch_tasks():
         if not isinstance(dry_run, bool):
             raise ValueError(
                 f"WATCH_TASKS[{index}].dry_run must be True or False"
+            )
+
+        notify = task_notify(task)
+
+        if not isinstance(notify, bool):
+            raise ValueError(
+                f"WATCH_TASKS[{index}].notify must be True or False"
             )
 
         validate_optional_positive_integer(
@@ -954,7 +1004,8 @@ def main():
             f"Items={item_counts['total']} | "
             f"Notified={item_counts['notified']} | "
             f"Ignored={item_counts['ignored']} | "
-            f"Baseline={item_counts['baseline']}"
+            f"Baseline={item_counts['baseline']} | "
+            f"Silent={item_counts['silent']}"
         )
 
         log_keyword_database_counts(db)
@@ -1011,6 +1062,7 @@ def main():
                             scan=scan,
                             source=source,
                             dry_run=task_dry_run(task),
+                            notify=task_notify(task),
                             max_price=task_max_price(task),
                             blocked_title_keywords=task_blocked_title_keywords(
                                 task

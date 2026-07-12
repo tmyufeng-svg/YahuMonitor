@@ -204,6 +204,7 @@ class Database:
             "notified": 0,
             "ignored": 0,
             "baseline": 0,
+            "silent": 0,
         }
 
         self.cursor.execute(
@@ -254,6 +255,7 @@ class Database:
                     "notified": 0,
                     "ignored": 0,
                     "baseline": 0,
+                    "silent": 0,
                     "other": 0,
                 }
 

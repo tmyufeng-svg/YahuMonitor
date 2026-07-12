@@ -79,6 +79,7 @@ WATCH_TASKS = [
         "interval": 2,
         "category_id": None,
         "dry_run": False,
+        "notify": True,
         "max_price": None,
         "blocked_title_keywords": None,
         "enabled": True,
@@ -89,6 +90,8 @@ WATCH_TASKS = [
 The current main loop supports Yahoo tasks and can dispatch Mercari tasks when explicitly enabled. Mercari remains disabled by default while public search parsing is tested.
 
 Set `dry_run` to `True` for a task when you want to test parsing inside the main loop without sending Telegram notifications or writing new items to the database.
+
+Set `notify` to `False` for a task when you want to save new items to the database with status `silent` but skip Telegram notifications.
 
 `DRY_RUN_SAMPLE_LIMIT` controls how many parsed dry-run items are printed to the log for each scan.
 

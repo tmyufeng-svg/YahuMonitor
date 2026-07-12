@@ -20,6 +20,7 @@
 - Added task-level dry-run mode for safe marketplace parser testing inside the main loop.
 - Added dry-run item sample logs for parsed title, price, and URL checks.
 - Added task-level price and blocked-title filter overrides.
+- Added task-level notification disable mode that stores new items as `silent`.
 
 ### Fixed
 
