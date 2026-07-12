@@ -10,6 +10,9 @@
 - Search-result parse coverage counts even when all listings already exist in the database.
 - Non-blocking shutdown path to avoid hanging on Playwright.stop() after Ctrl+C.
 - Search-result parser now tries duplicate item links before falling back to detail pages.
+- Search-result parser now tries parent container text when link text is incomplete.
+- Forced process exit after Ctrl+C cleanup to suppress Windows asyncio transport noise.
+- Search-result parent text extraction now uses fast DOM evaluation instead of slow locator waits.
 
 ## v0.7.x
 

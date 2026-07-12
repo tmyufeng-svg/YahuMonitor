@@ -37,10 +37,10 @@ class YahooScraper:
         return item_id
 
     def parse_price(self, text):
-        match = re.search(r"([\d,]+)円", text)
+        match = re.search(r"([\d,]+)\s*\u5186", text)
 
         if match is None:
-            raise ValueError("商品价格解析失败")
+            raise ValueError("item price parse failed")
 
         return int(match.group(1).replace(",", ""))
 
@@ -51,19 +51,23 @@ class YahooScraper:
             if line.strip()
         ]
 
+        ignored_lines = {
+            "\u9001\u6599\u8fbc\u307f",
+            "\u9001\u6599\u7121\u6599",
+        }
+
         for line in lines:
-            if "円" in line:
+            if "\u5186" in line:
                 continue
 
-            if line in {"送料込み", "送料無料"}:
+            if line in ignored_lines:
                 continue
 
             return line
 
-        raise ValueError("搜索结果标题解析失败")
+        raise ValueError("search result title parse failed")
 
-    def parse_search_item(self, link, item_id):
-        text = link.inner_text(timeout=1000)
+    def build_item_from_text(self, item_id, text):
         title = self.parse_title_from_search_text(text)
         price = self.parse_price(text)
 
@@ -74,6 +78,79 @@ class YahooScraper:
             url=self.build_item_url(item_id),
         )
 
+    def candidate_texts(self, link):
+        try:
+            texts = link.evaluate(
+                """
+                (element) => {
+                    const texts = [];
+
+                    const pushText = (node) => {
+                        if (!node || !node.innerText) {
+                            return;
+                        }
+
+                        const text = node.innerText.trim();
+
+                        if (text && !texts.includes(text)) {
+                            texts.push(text);
+                        }
+                    };
+
+                    pushText(element);
+
+                    let current = element.parentElement;
+
+                    for (let depth = 0; current && depth < 5; depth += 1) {
+                        pushText(current);
+                        current = current.parentElement;
+                    }
+
+                    return texts;
+                }
+                """
+            )
+
+        except Exception:
+            texts = []
+
+        return [
+            text
+            for text in texts
+            if isinstance(text, str) and text.strip()
+        ]
+
+    def parse_search_item(self, link, item_id):
+        last_error = None
+
+        for text in self.candidate_texts(link):
+            try:
+                return self.build_item_from_text(
+                    item_id=item_id,
+                    text=text,
+                )
+
+            except Exception as error:
+                last_error = error
+
+        if last_error is not None:
+            raise last_error
+
+        raise ValueError("search result text is empty")
+
+    def empty_candidate(self, item_id):
+        return {
+            "id": item_id,
+            "item": None,
+            "parse_error": None,
+        }
+
+    def parse_error_name(self, error):
+        return error.__class__.__name__
+
+    def candidate_has_item(self, candidate):
+        return candidate["item"] is not None
+
     def search_candidates(self, keyword):
 
         self.page.goto(
@@ -83,8 +160,8 @@ class YahooScraper:
 
         links = self.page.locator('a[href*="/item/"]')
 
-        candidates = []
-        seen = set()
+        candidates_by_id = {}
+        ordered_ids = []
 
         for i in range(links.count()):
             link = links.nth(i)
@@ -94,33 +171,33 @@ class YahooScraper:
             if item_id is None:
                 continue
 
-            if item_id in seen:
+            if item_id not in candidates_by_id:
+                candidates_by_id[item_id] = self.empty_candidate(
+                    item_id
+                )
+                ordered_ids.append(item_id)
+
+            candidate = candidates_by_id[item_id]
+
+            if self.candidate_has_item(candidate):
                 continue
 
-            seen.add(item_id)
-
-            item = None
-            parse_error = None
-
             try:
-                item = self.parse_search_item(
+                candidate["item"] = self.parse_search_item(
                     link=link,
                     item_id=item_id,
                 )
+                candidate["parse_error"] = None
 
             except Exception as error:
-                item = None
-                parse_error = error.__class__.__name__
+                candidate["parse_error"] = self.parse_error_name(
+                    error
+                )
 
-            candidates.append(
-                {
-                    "id": item_id,
-                    "item": item,
-                    "parse_error": parse_error,
-                }
-            )
-
-        return candidates
+        return [
+            candidates_by_id[item_id]
+            for item_id in ordered_ids
+        ]
 
     def search(self, keyword):
 
@@ -167,5 +244,5 @@ class YahooScraper:
             id=item_id,
             title=title,
             price=price,
-            url=url
+            url=url,
         )

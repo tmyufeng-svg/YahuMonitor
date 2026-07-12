@@ -1,3 +1,5 @@
+import logging
+import os
 import time
 
 from browser_manager import BrowserManager
@@ -16,6 +18,7 @@ from config import (
     SEND_STARTUP_MESSAGE,
     NOTIFY_EXISTING_ON_STARTUP,
     USE_SEARCH_RESULT_ITEM_DETAILS,
+    FORCE_EXIT_AFTER_CTRL_C,
 )
 from database import Database
 from logger import logger
@@ -48,17 +51,14 @@ def process_item(
     keyword,
     listing_item=None,
 ):
-    """
-    处理一个新商品。
-
-    命中过滤条件的商品不会推送，但会保存到数据库，
-    避免后续每一轮重复处理同一个商品。
-    """
-
     detail_fetched = listing_item is None
 
     try:
-        logger.info(f"[{keyword}] NEW {item_id}")
+        item_source = "detail_page" if detail_fetched else "search_result"
+
+        logger.info(
+            f"[{keyword}] NEW {item_id} | Source={item_source}"
+        )
 
         if listing_item is None:
             item = yahoo.get_item(item_id)
@@ -76,7 +76,7 @@ def process_item(
                 ignore_reason=f"title:{blocked_keyword}",
             )
             logger.info(
-                f"[{keyword}] 已忽略 {item.id} | "
+                f"[{keyword}] Ignored {item.id} | "
                 f"Blocked={blocked_keyword} | "
                 f"Title={item.title}"
             )
@@ -94,7 +94,7 @@ def process_item(
                 ignore_reason=f"price>{MAX_PRICE}",
             )
             logger.info(
-                f"[{keyword}] 已忽略 {item.id} | "
+                f"[{keyword}] Ignored {item.id} | "
                 f"Price={item.price:,} | "
                 f"MaxPrice={MAX_PRICE:,} | "
                 f"Title={item.title}"
@@ -113,7 +113,8 @@ def process_item(
         )
 
         logger.info(
-            f"[{keyword}] 已推送并保存 {item.id}"
+            f"[{keyword}] Notified and saved {item.id} | "
+            f"Source={item_source}"
         )
 
         return {
@@ -126,8 +127,7 @@ def process_item(
 
     except Exception:
         logger.exception(
-            f"[{keyword}] 商品处理失败 | "
-            f"Item={item_id}"
+            f"[{keyword}] Item processing failed | Item={item_id}"
         )
 
         return {
@@ -172,17 +172,13 @@ def save_startup_baseline_items(yahoo, db, item_ids, keyword):
 
     if saved_count:
         logger.info(
-            f"[{keyword}] 已批量加入启动基线 {saved_count} 件"
+            f"[{keyword}] Baseline saved {saved_count} items"
         )
 
     return saved_count
 
 
 def scan_once(yahoo, db, notifier, keyword, scan):
-    """
-    扫描一个关键词。
-    """
-
     start = time.perf_counter()
 
     candidates = search_candidates(
@@ -380,7 +376,7 @@ def log_cycle_summary(scan, keyword_count, cycle_stats):
 
 def log_runtime_summary(scan, uptime, runtime_stats):
     logger.info(
-        f"运行统计 | "
+        "Runtime stats | "
         f"Scans={scan} | "
         f"Uptime={uptime} | "
         f"Found={runtime_stats['found']} | "
@@ -403,15 +399,15 @@ def log_keyword_database_counts(db):
     keyword_counts = db.count_items_by_keyword()
 
     if not keyword_counts:
-        logger.info("Keyword 数据统计 | 暂无历史商品")
+        logger.info("Keyword stats | No historical items")
         return
 
     for keyword in sorted(keyword_counts):
         counts = keyword_counts[keyword]
-        display_keyword = keyword or "(未记录关键字)"
+        display_keyword = keyword or "(unknown keyword)"
 
         logger.info(
-            f"Keyword 数据统计 | "
+            "Keyword stats | "
             f"Keyword={display_keyword} | "
             f"Items={counts['total']} | "
             f"Notified={counts['notified']} | "
@@ -422,21 +418,15 @@ def log_keyword_database_counts(db):
 
 
 def close_database(db):
-    """
-    安全关闭数据库。
-    """
-
     if db is None:
         return
 
     try:
         db.close()
-        logger.info("Database 已关闭")
+        logger.info("Database closed")
 
     except Exception as error:
-        logger.warning(
-            f"Database 关闭失败：{error}"
-        )
+        logger.warning(f"Database close failed: {error}")
 
 
 def format_duration(seconds):
@@ -450,15 +440,15 @@ def format_duration(seconds):
 
 def validate_boolean(name, value):
     if not isinstance(value, bool):
-        raise ValueError(f"{name} 必须是 True 或 False")
+        raise ValueError(f"{name} must be True or False")
 
 
 def validate_positive_number(name, value):
     if not isinstance(value, (int, float)):
-        raise ValueError(f"{name} 必须是数字")
+        raise ValueError(f"{name} must be a number")
 
     if value <= 0:
-        raise ValueError(f"{name} 必须大于 0")
+        raise ValueError(f"{name} must be greater than 0")
 
 
 def validate_optional_positive_integer(name, value):
@@ -466,29 +456,25 @@ def validate_optional_positive_integer(name, value):
         return
 
     if not isinstance(value, int):
-        raise ValueError(f"{name} 必须是整数或 None")
+        raise ValueError(f"{name} must be an integer or None")
 
     if value <= 0:
-        raise ValueError(f"{name} 必须大于 0")
+        raise ValueError(f"{name} must be greater than 0")
 
 
 def validate_non_negative_integer(name, value):
     if not isinstance(value, int):
-        raise ValueError(f"{name} 必须是整数")
+        raise ValueError(f"{name} must be an integer")
 
     if value < 0:
-        raise ValueError(f"{name} 不能小于 0")
+        raise ValueError(f"{name} cannot be less than 0")
 
 
 def validate_keywords():
-    """
-    检查关键字配置。
-    """
-
     if not KEYWORDS:
         raise ValueError(
-            "KEYWORDS 不能为空，请在 config.py 中"
-            "至少设置一个搜索关键字"
+            "KEYWORDS cannot be empty. "
+            "Set at least one keyword in config.py."
         )
 
     invalid_keywords = [
@@ -499,9 +485,7 @@ def validate_keywords():
     ]
 
     if invalid_keywords:
-        raise ValueError(
-            "KEYWORDS 中存在空白或无效的关键字"
-        )
+        raise ValueError("KEYWORDS contains empty or invalid values")
 
 
 def validate_blocked_title_keywords():
@@ -514,17 +498,14 @@ def validate_blocked_title_keywords():
 
     if invalid_keywords:
         raise ValueError(
-            "BLOCKED_TITLE_KEYWORDS 中存在空白或无效的关键字"
+            "BLOCKED_TITLE_KEYWORDS contains empty or invalid values"
         )
 
 
 def validate_runtime_config():
     validate_keywords()
     validate_blocked_title_keywords()
-    validate_boolean(
-        "SEND_STARTUP_MESSAGE",
-        SEND_STARTUP_MESSAGE,
-    )
+    validate_boolean("SEND_STARTUP_MESSAGE", SEND_STARTUP_MESSAGE)
     validate_boolean(
         "NOTIFY_EXISTING_ON_STARTUP",
         NOTIFY_EXISTING_ON_STARTUP,
@@ -533,18 +514,13 @@ def validate_runtime_config():
         "USE_SEARCH_RESULT_ITEM_DETAILS",
         USE_SEARCH_RESULT_ITEM_DETAILS,
     )
-    validate_boolean(
-        "DATABASE_ENABLE_WAL",
-        DATABASE_ENABLE_WAL,
-    )
+    validate_boolean("FORCE_EXIT_AFTER_CTRL_C", FORCE_EXIT_AFTER_CTRL_C)
+    validate_boolean("DATABASE_ENABLE_WAL", DATABASE_ENABLE_WAL)
     validate_non_negative_integer(
         "DATABASE_BUSY_TIMEOUT_MS",
         DATABASE_BUSY_TIMEOUT_MS,
     )
-    validate_positive_number(
-        "SCAN_INTERVAL",
-        SCAN_INTERVAL,
-    )
+    validate_positive_number("SCAN_INTERVAL", SCAN_INTERVAL)
     validate_positive_number(
         "ERROR_RETRY_INTERVAL",
         ERROR_RETRY_INTERVAL,
@@ -553,34 +529,27 @@ def validate_runtime_config():
         "MAX_BROWSER_RESTARTS_PER_SCAN",
         MAX_BROWSER_RESTARTS_PER_SCAN,
     )
-    validate_optional_positive_integer(
-        "MAX_PRICE",
-        MAX_PRICE,
-    )
+    validate_optional_positive_integer("MAX_PRICE", MAX_PRICE)
 
     if not isinstance(DATABASE_NAME, str) or not DATABASE_NAME:
-        raise ValueError("DATABASE_NAME 不能为空")
+        raise ValueError("DATABASE_NAME cannot be empty")
 
 
 def send_startup_check(notifier):
     if not SEND_STARTUP_MESSAGE:
-        logger.info("已跳过 Telegram 启动测试消息")
+        logger.info("Telegram startup test skipped")
         return
 
-    logger.info("正在测试 Telegram 推送连接")
+    logger.info("Testing Telegram delivery")
 
     notifier.send_startup_message(
         keyword_count=len(KEYWORDS)
     )
 
-    logger.info("Telegram 推送连接正常")
+    logger.info("Telegram delivery OK")
 
 
 def rebuild_scraper(browser_manager):
-    """
-    重启 Browser，并基于新的 Page 创建 YahooScraper。
-    """
-
     page = browser_manager.restart()
 
     return YahooScraper(page)
@@ -594,6 +563,7 @@ def main():
     db = None
     browser_manager = None
     scan = 0
+    shutdown_requested = False
     runtime_stats = empty_scan_stats()
     started_at = time.perf_counter()
 
@@ -608,7 +578,7 @@ def main():
         item_counts = db.count_items_by_status()
 
         logger.info(
-            f"Database 已连接 | "
+            "Database connected | "
             f"File={DATABASE_NAME} | "
             f"WAL={DATABASE_ENABLE_WAL} | "
             f"BusyTimeout={DATABASE_BUSY_TIMEOUT_MS}ms | "
@@ -633,7 +603,7 @@ def main():
         yahoo = YahooScraper(page)
 
         logger.info(
-            "Yahoo Monitor 启动 | "
+            "Yahoo Monitor started | "
             f"Keywords={len(KEYWORDS)} | "
             f"BlockedTitleKeywords={len(BLOCKED_TITLE_KEYWORDS)} | "
             f"MaxPrice={MAX_PRICE} | "
@@ -658,15 +628,8 @@ def main():
                             scan=scan,
                         )
 
-                        add_scan_stats(
-                            cycle_stats,
-                            scan_stats,
-                        )
-
-                        add_scan_stats(
-                            runtime_stats,
-                            scan_stats,
-                        )
+                        add_scan_stats(cycle_stats, scan_stats)
+                        add_scan_stats(runtime_stats, scan_stats)
 
                     except KeyboardInterrupt:
                         raise
@@ -675,25 +638,20 @@ def main():
                         cycle_stats["failed"] += 1
                         runtime_stats["failed"] += 1
                         logger.exception(
-                            "关键词扫描失败 | "
+                            "Keyword scan failed | "
                             f"Scan=#{scan} | "
                             f"Keyword={keyword}"
                         )
 
-                        if not can_restart_browser(
-                            restart_count
-                        ):
+                        if not can_restart_browser(restart_count):
                             logger.warning(
-                                "本轮 Browser 重启次数已达上限，"
-                                "跳过剩余关键词"
+                                "Browser restart limit reached "
+                                "for this cycle; remaining keywords skipped"
                             )
                             break
 
                         restart_count += 1
-
-                        yahoo = rebuild_scraper(
-                            browser_manager
-                        )
+                        yahoo = rebuild_scraper(browser_manager)
 
                 log_cycle_summary(
                     scan=scan,
@@ -708,44 +666,31 @@ def main():
 
             except Exception:
                 logger.exception(
-                    "扫描循环发生异常，将在 "
-                    f"{ERROR_RETRY_INTERVAL} "
-                    "秒后继续"
+                    "Scan loop error; retrying after "
+                    f"{ERROR_RETRY_INTERVAL} seconds"
                 )
 
-                time.sleep(
-                    ERROR_RETRY_INTERVAL
-                )
+                time.sleep(ERROR_RETRY_INTERVAL)
 
-                if not can_restart_browser(
-                    restart_count
-                ):
+                if not can_restart_browser(restart_count):
                     logger.warning(
-                        "本轮 Browser 重启次数已达上限，"
-                        "等待下一轮再尝试"
+                        "Browser restart limit reached for this cycle; "
+                        "waiting for next cycle"
                     )
                     continue
 
                 restart_count += 1
-
-                yahoo = rebuild_scraper(
-                    browser_manager
-                )
+                yahoo = rebuild_scraper(browser_manager)
 
     except KeyboardInterrupt:
-        logger.info(
-            "收到停止指令，正在关闭监控"
-        )
+        shutdown_requested = True
+        logger.info("Stop requested; shutting down monitor")
 
     except Exception:
-        logger.exception(
-            "Yahoo Monitor 启动或运行失败"
-        )
+        logger.exception("Yahoo Monitor startup or runtime failed")
 
     finally:
-        uptime = format_duration(
-            time.perf_counter() - started_at
-        )
+        uptime = format_duration(time.perf_counter() - started_at)
 
         log_runtime_summary(
             scan=scan,
@@ -758,7 +703,11 @@ def main():
         if browser_manager is not None:
             browser_manager.stop(wait_for_playwright=False)
 
-        logger.info("Yahoo Monitor 已停止")
+        logger.info("Yahoo Monitor stopped")
+
+        if shutdown_requested and FORCE_EXIT_AFTER_CTRL_C:
+            logging.shutdown()
+            os._exit(0)
 
 
 if __name__ == "__main__":
