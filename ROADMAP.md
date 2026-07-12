@@ -1,8 +1,8 @@
 # Yahoo Monitor Roadmap
 
-## Current Version: 0.9.6-beta
+## Current Version: 0.9.7-beta
 
-This version is the UI data export beta.
+This version is the local dashboard prototype.
 
 Before calling the project V1.0, run:
 
@@ -27,6 +27,7 @@ The immediate goal is to make configured watch tasks run safely and repeatably:
 - Safe local task editor for listing, enabling, disabling, changing modes, and adding tasks
 - Shared watch task validation for the editor, config checks, and future front-end work
 - UI-ready JSON export for tasks, schema, categories, modes, and version state
+- Read-only local dashboard for viewing configured tasks from `app_state.json`
 
 Useful test commands:
 
@@ -61,6 +62,7 @@ Minimum V1.0 gate:
 - `task_editor.py` can make common task changes without hand-editing JSON.
 - `task_config_check.py` catches invalid task configuration before the monitor starts.
 - `export_app_state.py` provides the data shape needed by a local front-end.
+- `dashboard.html` can display task status without installing front-end dependencies.
 - `release_check.py` passes.
 
 ## V1.x Target: Better Operator Experience

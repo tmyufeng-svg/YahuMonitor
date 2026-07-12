@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Yahoo Monitor Dashboard</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f6f7f9;
+      --panel: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --line: #d9dee7;
+      --accent: #2563eb;
+      --ok: #15803d;
+      --off: #9ca3af;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Arial, "Helvetica Neue", sans-serif;
+    }
+
+    header {
+      padding: 20px 24px 12px;
+      border-bottom: 1px solid var(--line);
+      background: var(--panel);
+    }
+
+    h1 {
+      margin: 0 0 6px;
+      font-size: 24px;
+      line-height: 1.2;
+    }
+
+    main {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .toolbar,
+    .summary,
+    .table-wrap {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+
+    .toolbar {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px;
+      margin-bottom: 16px;
+    }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 1px;
+      overflow: hidden;
+      margin-bottom: 16px;
+      background: var(--line);
+    }
+
+    .metric {
+      padding: 16px;
+      background: var(--panel);
+    }
+
+    .metric span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 6px;
+    }
+
+    .metric strong {
+      font-size: 24px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+    }
+
+    th,
+    td {
+      padding: 12px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      font-size: 14px;
+      vertical-align: middle;
+      word-break: break-word;
+    }
+
+    th {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+      background: #fbfcfe;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      min-height: 24px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: #edf2ff;
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .badge.off {
+      background: #f3f4f6;
+      color: var(--off);
+    }
+
+    .badge.on {
+      background: #e8f7ee;
+      color: var(--ok);
+    }
+
+    .muted {
+      color: var(--muted);
+    }
+
+    input[type="file"] {
+      max-width: 100%;
+    }
+
+    @media (max-width: 760px) {
+      .toolbar {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .summary {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      th:nth-child(5),
+      td:nth-child(5),
+      th:nth-child(6),
+      td:nth-child(6) {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Yahoo Monitor Dashboard</h1>
+    <div id="subtitle" class="muted">Load app_state.json to view monitor tasks.</div>
+  </header>
+
+  <main>
+    <section class="toolbar">
+      <div>
+        <strong>App State</strong>
+        <div class="muted">Generate with: python export_app_state.py --output app_state.json</div>
+      </div>
+      <input id="stateFile" type="file" accept="application/json,.json">
+    </section>
+
+    <section class="summary" aria-label="Summary">
+      <div class="metric">
+        <span>Total Tasks</span>
+        <strong id="totalTasks">-</strong>
+      </div>
+      <div class="metric">
+        <span>Enabled</span>
+        <strong id="enabledTasks">-</strong>
+      </div>
+      <div class="metric">
+        <span>Disabled</span>
+        <strong id="disabledTasks">-</strong>
+      </div>
+      <div class="metric">
+        <span>Version</span>
+        <strong id="version">-</strong>
+      </div>
+    </section>
+
+    <section class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 22%">Task</th>
+            <th style="width: 10%">Status</th>
+            <th style="width: 10%">Source</th>
+            <th style="width: 18%">Keyword</th>
+            <th style="width: 10%">Mode</th>
+            <th style="width: 10%">Interval</th>
+            <th style="width: 10%">Category</th>
+            <th style="width: 10%">Limit</th>
+          </tr>
+        </thead>
+        <tbody id="taskRows">
+          <tr>
+            <td colspan="8" class="muted">No app state loaded.</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+
+  <script>
+    const fileInput = document.getElementById("stateFile");
+    const rows = document.getElementById("taskRows");
+
+    function text(value) {
+      return value === null || value === undefined || value === "" ? "-" : String(value);
+    }
+
+    function setText(id, value) {
+      document.getElementById(id).textContent = text(value);
+    }
+
+    function renderState(state) {
+      const summary = state.summary || {};
+      const app = state.app || {};
+      const tasks = state.tasks || [];
+
+      document.getElementById("subtitle").textContent = app.name || "Yahoo Monitor";
+      setText("totalTasks", summary.total);
+      setText("enabledTasks", summary.enabled);
+      setText("disabledTasks", summary.disabled);
+      setText("version", app.version);
+
+      rows.innerHTML = "";
+
+      if (!tasks.length) {
+        rows.innerHTML = '<tr><td colspan="8" class="muted">No tasks configured.</td></tr>';
+        return;
+      }
+
+      for (const task of tasks) {
+        const enabled = task.enabled !== false;
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${text(task.task_name)}</td>
+          <td><span class="badge ${enabled ? "on" : "off"}">${enabled ? "Enabled" : "Disabled"}</span></td>
+          <td><span class="badge">${text(task.source)}</span></td>
+          <td>${text(task.keyword)}</td>
+          <td>${text(task.mode)}</td>
+          <td>${text(task.interval)}s</td>
+          <td>${text(task.category_key)}</td>
+          <td>${text(task.limit)}</td>
+        `;
+        rows.appendChild(row);
+      }
+    }
+
+    fileInput.addEventListener("change", async (event) => {
+      const file = event.target.files[0];
+      if (!file) {
+        return;
+      }
+
+      try {
+        const state = JSON.parse(await file.text());
+        renderState(state);
+      } catch (error) {
+        rows.innerHTML = `<tr><td colspan="8">Failed to load JSON: ${error.message}</td></tr>`;
+      }
+    });
+  </script>
+</body>
+</html>

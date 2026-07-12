@@ -8,6 +8,7 @@ REQUIRED_FILES = [
     "README.md",
     "ROADMAP.md",
     "CHANGELOG.md",
+    "dashboard.html",
     "requirements.txt",
     "watch_tasks.json",
     "app_state.py",

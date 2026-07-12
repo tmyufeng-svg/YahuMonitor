@@ -11,6 +11,7 @@
 - Updated the current milestone to `0.9.4-beta`.
 - Updated the current milestone to `0.9.5-beta`.
 - Updated the current milestone to `0.9.6-beta`.
+- Updated the current milestone to `0.9.7-beta`.
 
 ### Research
 
@@ -67,6 +68,7 @@
 - Added `task_config_check.py` for fast standalone task configuration checks.
 - Added `app_state.py` to build UI-ready project state.
 - Added `export_app_state.py` to export tasks, schema, categories, modes, and version data as JSON.
+- Added `dashboard.html` as a local read-only task dashboard prototype.
 
 ### Changed
 
