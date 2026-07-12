@@ -19,6 +19,7 @@ from config import (
     NOTIFY_EXISTING_ON_STARTUP,
     USE_SEARCH_RESULT_ITEM_DETAILS,
     FORCE_EXIT_AFTER_CTRL_C,
+    DETAILED_SCAN_LOGS,
 )
 from database import Database
 from logger import logger
@@ -275,22 +276,24 @@ def scan_once(yahoo, db, notifier, keyword, scan):
 
     elapsed = time.perf_counter() - start
 
-    logger.info(
-        f"Scan #{scan} | "
-        f"Keyword={keyword} | "
-        f"Found={found_count} | "
-        f"New={new_count} | "
-        f"Ignored={ignored_count} | "
-        f"Baseline={baseline_count} | "
-        f"Failed={failed_count} | "
-        f"SearchDetails={search_detail_count} | "
-        f"SearchParseFailed={search_parse_failed_count} | "
-        f"SearchParseErrors={format_error_counts(search_parse_errors)} | "
-        f"ListDetails={list_detail_count} | "
-        f"ListParseFailed={list_parse_failed_count} | "
-        f"ListParseErrors={format_error_counts(list_parse_errors)} | "
-        f"DetailFetches={detail_fetch_count} | "
-        f"Time={elapsed:.2f}s"
+    log_scan_summary(
+        scan=scan,
+        keyword=keyword,
+        stats={
+            "found": found_count,
+            "new": new_count,
+            "ignored": ignored_count,
+            "baseline": baseline_count,
+            "failed": failed_count,
+            "search_details": search_detail_count,
+            "search_parse_failed": search_parse_failed_count,
+            "search_parse_errors": search_parse_errors,
+            "list_details": list_detail_count,
+            "list_parse_failed": list_parse_failed_count,
+            "list_parse_errors": list_parse_errors,
+            "detail_fetches": detail_fetch_count,
+            "elapsed": elapsed,
+        },
     )
 
     return {
@@ -354,7 +357,53 @@ def format_error_counts(error_counts):
     )
 
 
+def log_scan_summary(scan, keyword, stats):
+    if not DETAILED_SCAN_LOGS:
+        logger.info(
+            f"Scan #{scan} | "
+            f"Keyword={keyword} | "
+            f"Found={stats['found']} | "
+            f"New={stats['new']} | "
+            f"Ignored={stats['ignored']} | "
+            f"Failed={stats['failed']} | "
+            f"DetailFetches={stats['detail_fetches']} | "
+            f"Time={stats['elapsed']:.2f}s"
+        )
+        return
+
+    logger.info(
+        f"Scan #{scan} | "
+        f"Keyword={keyword} | "
+        f"Found={stats['found']} | "
+        f"New={stats['new']} | "
+        f"Ignored={stats['ignored']} | "
+        f"Baseline={stats['baseline']} | "
+        f"Failed={stats['failed']} | "
+        f"SearchDetails={stats['search_details']} | "
+        f"SearchParseFailed={stats['search_parse_failed']} | "
+        f"SearchParseErrors={format_error_counts(stats['search_parse_errors'])} | "
+        f"ListDetails={stats['list_details']} | "
+        f"ListParseFailed={stats['list_parse_failed']} | "
+        f"ListParseErrors={format_error_counts(stats['list_parse_errors'])} | "
+        f"DetailFetches={stats['detail_fetches']} | "
+        f"Time={stats['elapsed']:.2f}s"
+    )
+
+
 def log_cycle_summary(scan, keyword_count, cycle_stats):
+    if not DETAILED_SCAN_LOGS:
+        logger.info(
+            f"Cycle #{scan} | "
+            f"Keywords={keyword_count} | "
+            f"Found={cycle_stats['found']} | "
+            f"New={cycle_stats['new']} | "
+            f"Ignored={cycle_stats['ignored']} | "
+            f"Failed={cycle_stats['failed']} | "
+            f"DetailFetches={cycle_stats['detail_fetches']} | "
+            f"Time={cycle_stats['elapsed']:.2f}s"
+        )
+        return
+
     logger.info(
         f"Cycle #{scan} | "
         f"Keywords={keyword_count} | "
@@ -375,6 +424,20 @@ def log_cycle_summary(scan, keyword_count, cycle_stats):
 
 
 def log_runtime_summary(scan, uptime, runtime_stats):
+    if not DETAILED_SCAN_LOGS:
+        logger.info(
+            "Runtime stats | "
+            f"Scans={scan} | "
+            f"Uptime={uptime} | "
+            f"Found={runtime_stats['found']} | "
+            f"New={runtime_stats['new']} | "
+            f"Ignored={runtime_stats['ignored']} | "
+            f"Failed={runtime_stats['failed']} | "
+            f"DetailFetches={runtime_stats['detail_fetches']} | "
+            f"ScanTime={runtime_stats['elapsed']:.2f}s"
+        )
+        return
+
     logger.info(
         "Runtime stats | "
         f"Scans={scan} | "
@@ -515,6 +578,7 @@ def validate_runtime_config():
         USE_SEARCH_RESULT_ITEM_DETAILS,
     )
     validate_boolean("FORCE_EXIT_AFTER_CTRL_C", FORCE_EXIT_AFTER_CTRL_C)
+    validate_boolean("DETAILED_SCAN_LOGS", DETAILED_SCAN_LOGS)
     validate_boolean("DATABASE_ENABLE_WAL", DATABASE_ENABLE_WAL)
     validate_non_negative_integer(
         "DATABASE_BUSY_TIMEOUT_MS",

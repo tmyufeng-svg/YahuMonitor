@@ -31,20 +31,23 @@ ERROR_RETRY_INTERVAL = 5
 MAX_BROWSER_RESTARTS_PER_SCAN = 2
 NOTIFY_EXISTING_ON_STARTUP = False
 USE_SEARCH_RESULT_ITEM_DETAILS = True
+FORCE_EXIT_AFTER_CTRL_C = True
+DETAILED_SCAN_LOGS = False
 
 
-# Yahoo 搜索关键字
+# Yahoo search keywords
 KEYWORDS = [
     "Contax T3",
     "Nikon L35AF",
 ]
 
 
-# 标题屏蔽词
+# Title keywords to ignore.
+# Keep this as a harmless placeholder unless you really want filtering.
 BLOCKED_TITLE_KEYWORDS = [
-    "サンプル除外ワード",
+    "sample-ignore-word",
 ]
 
 
-# 价格上限。None 表示不启用价格过滤。
+# Maximum price filter. None means disabled.
 MAX_PRICE = None
