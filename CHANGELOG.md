@@ -37,6 +37,9 @@
 - Added validation to prevent multiple Mercari modes for the same keyword from running at once.
 - Added task-level `category_id` plumbing for Yahoo and Mercari search URLs.
 - Added `--category-id` to `mercari_probe.py`.
+- Added `categories.py` for named marketplace category aliases.
+- Added `category_key` support in watch tasks.
+- Added `list_categories.py` to inspect configured category aliases.
 
 ### Fixed
 

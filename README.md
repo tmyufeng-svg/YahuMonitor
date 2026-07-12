@@ -92,6 +92,8 @@ Ctrl+C
 - `config.example.py` - reference runtime configuration
 - `config_check.py` - local configuration validator
 - `set_mercari_mode.py` - local Mercari mode switcher for `.env`
+- `categories.py` - marketplace category alias catalog
+- `list_categories.py` - category alias listing tool
 - `logger.py` - console and file logging
 
 ## Watch Tasks
@@ -152,6 +154,17 @@ Task-level `max_price` and `blocked_title_keywords` override the global filters 
 Task-level `limit` controls how many unique search results are parsed per scan. Use `None` for no limit, or a small integer such as `15` when testing Mercari.
 
 Task-level `category_id` is passed to the marketplace search URL when set. Keep it as `None` until you have confirmed the category ID with a probe command.
+
+Task-level `category_key` is a named alias for future UI selection. `category_id` wins when both fields are set.
+
+List available category aliases:
+
+```powershell
+python list_categories.py
+python list_categories.py --source mercari
+```
+
+Current default aliases are intentionally conservative. Use `category_id` directly after verifying a real marketplace category URL.
 
 ## Mercari Probe
 

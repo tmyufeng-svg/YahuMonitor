@@ -8,6 +8,7 @@ from main import (
     create_scrapers,
     scan_once,
     task_blocked_title_keywords,
+    task_category_key,
     task_category_id,
     task_dry_run,
     task_interval,
@@ -34,7 +35,8 @@ def list_tasks(tasks):
             f"name={task_name(task)} | "
             f"source={task_source(task)} | "
             f"keyword={task_keyword(task)} | "
-            f"category={task_category_id(task)} | "
+            f"category_key={task_category_key(task)} | "
+            f"category_id={task_category_id(task)} | "
             f"interval={task_interval(task)} | "
             f"dry_run={task_dry_run(task)} | "
             f"notify={task_notify(task)} | "
@@ -144,6 +146,7 @@ def run_task_probe(task, mode, limit_override):
     source = task_source(task)
     name = task_name(task)
     keyword = task_keyword(task).strip()
+    category_key = task_category_key(task)
     category_id = task_category_id(task)
     settings = mode_settings(task, mode)
     limit = effective_limit(task, limit_override)
@@ -153,7 +156,8 @@ def run_task_probe(task, mode, limit_override):
         f"name={name} | "
         f"source={source} | "
         f"keyword={keyword} | "
-        f"category={category_id} | "
+        f"category_key={category_key} | "
+        f"category_id={category_id} | "
         f"mode={mode} | "
         f"limit={limit}"
     )

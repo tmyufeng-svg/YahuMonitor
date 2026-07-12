@@ -4,6 +4,10 @@ import time
 from datetime import datetime
 
 from browser_manager import BrowserManager
+from categories import (
+    available_category_keys,
+    resolve_category_id,
+)
 from config import (
     TOKEN,
     CHAT_ID,
@@ -767,8 +771,16 @@ def task_keyword(task):
     return task.get("keyword", "")
 
 
+def task_category_key(task):
+    return task.get("category_key", None)
+
+
 def task_category_id(task):
-    return task.get("category_id", None)
+    return resolve_category_id(
+        source=task_source(task),
+        category_key=task_category_key(task),
+        category_id=task.get("category_id", None),
+    )
 
 
 def task_interval(task):
@@ -817,7 +829,8 @@ def log_watch_tasks(tasks):
             f"Name={task_name(task)} | "
             f"Marketplace={task_source(task)} | "
             f"Keyword={task_keyword(task).strip()} | "
-            f"Category={task_category_id(task)} | "
+            f"CategoryKey={task_category_key(task)} | "
+            f"CategoryId={task_category_id(task)} | "
             f"Interval={task_interval(task)}s | "
             f"DryRun={task_dry_run(task)} | "
             f"Notify={task_notify(task)} | "
@@ -882,16 +895,36 @@ def validate_watch_tasks():
                 f"WATCH_TASKS[{index}].keyword cannot be empty"
             )
 
-        category_id = task_category_id(task)
+        category_key = task_category_key(task)
+        raw_category_id = task.get("category_id", None)
 
-        if category_id is not None:
-            if not isinstance(category_id, (int, str)):
+        if category_key is not None:
+            if not isinstance(category_key, str) or not category_key.strip():
+                raise ValueError(
+                    f"WATCH_TASKS[{index}].category_key "
+                    "must be a string or None"
+                )
+
+            available_keys = available_category_keys(source)
+
+            if category_key not in available_keys:
+                raise ValueError(
+                    f"WATCH_TASKS[{index}].category_key "
+                    f"is unknown for {source}: {category_key}. "
+                    f"Available keys: {', '.join(available_keys)}"
+                )
+
+        if raw_category_id is not None:
+            if not isinstance(raw_category_id, (int, str)):
                 raise ValueError(
                     f"WATCH_TASKS[{index}].category_id "
                     "must be a string, integer, or None"
                 )
 
-            if isinstance(category_id, str) and not category_id.strip():
+            if (
+                isinstance(raw_category_id, str)
+                and not raw_category_id.strip()
+            ):
                 raise ValueError(
                     f"WATCH_TASKS[{index}].category_id "
                     "cannot be blank"
