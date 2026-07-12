@@ -138,6 +138,26 @@ Limit parsed results:
 python mercari_probe.py "Contax T3" --limit 5
 ```
 
+`task_probe.py` can run any configured watch task once through the main scan path without Telegram and without touching `items.db`.
+
+List configured tasks:
+
+```powershell
+python task_probe.py --list
+```
+
+Run the first Mercari task as dry run:
+
+```powershell
+python task_probe.py --mode dry-run --limit 5
+```
+
+Run a specific task in database-only silent mode using an in-memory database:
+
+```powershell
+python task_probe.py --task-name "Mercari silent | Contax T3" --mode silent --limit 5
+```
+
 ## Mercari Task Modes
 
 Mercari is available as an optional public-search task. Keep it disabled until probe output looks correct.
@@ -196,7 +216,7 @@ Live notification mode:
 }
 ```
 
-Recommended order: probe first, then dry run, then silent mode, then notification mode.
+Recommended order: `mercari_probe.py`, then `task_probe.py --mode dry-run`, then `task_probe.py --mode silent`, then notification mode in `main.py`.
 
 ## Safety Notes
 

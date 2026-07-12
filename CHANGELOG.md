@@ -29,6 +29,7 @@
 - Documented the recommended Mercari activation flow.
 - Added task-level search result limits for safer marketplace trials.
 - Mercari probe `--limit` now limits parsed candidates, not only printed output.
+- Added `task_probe.py` for one-shot watch task testing without Telegram or `items.db` writes.
 
 ### Fixed
 
