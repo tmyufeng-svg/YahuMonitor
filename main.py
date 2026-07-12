@@ -1,6 +1,7 @@
 import logging
 import os
 import time
+from datetime import datetime
 
 from browser_manager import BrowserManager
 from config import (
@@ -44,6 +45,10 @@ def item_exceeds_max_price(item):
     return item.price > MAX_PRICE
 
 
+def current_detected_at():
+    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+
 def process_item(
     yahoo,
     db,
@@ -56,9 +61,12 @@ def process_item(
 
     try:
         item_source = "detail_page" if detail_fetched else "search_result"
+        detected_at = current_detected_at()
 
         logger.info(
-            f"[{keyword}] NEW {item_id} | Source={item_source}"
+            f"[{keyword}] NEW {item_id} | "
+            f"Source={item_source} | "
+            f"DetectedAt={detected_at}"
         )
 
         if listing_item is None:
@@ -78,6 +86,8 @@ def process_item(
             )
             logger.info(
                 f"[{keyword}] Ignored {item.id} | "
+                f"Source={item_source} | "
+                f"DetectedAt={detected_at} | "
                 f"Blocked={blocked_keyword} | "
                 f"Title={item.title}"
             )
@@ -96,6 +106,8 @@ def process_item(
             )
             logger.info(
                 f"[{keyword}] Ignored {item.id} | "
+                f"Source={item_source} | "
+                f"DetectedAt={detected_at} | "
                 f"Price={item.price:,} | "
                 f"MaxPrice={MAX_PRICE:,} | "
                 f"Title={item.title}"
@@ -115,7 +127,8 @@ def process_item(
 
         logger.info(
             f"[{keyword}] Notified and saved {item.id} | "
-            f"Source={item_source}"
+            f"Source={item_source} | "
+            f"DetectedAt={detected_at}"
         )
 
         return {

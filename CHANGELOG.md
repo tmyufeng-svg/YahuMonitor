@@ -14,6 +14,7 @@
 - Forced process exit after Ctrl+C cleanup to suppress Windows asyncio transport noise.
 - Search-result parent text extraction now uses fast DOM evaluation instead of slow locator waits.
 - Compact scan, cycle, and runtime logs are now the default, with detailed scan metrics behind a config flag.
+- New item processing logs now include item source and local detection time.
 
 ## v0.7.x
 
