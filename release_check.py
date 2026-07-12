@@ -10,6 +10,8 @@ REQUIRED_FILES = [
     "CHANGELOG.md",
     "requirements.txt",
     "watch_tasks.json",
+    "app_state.py",
+    "export_app_state.py",
     "task_config.py",
     "task_config_check.py",
     "task_editor.py",

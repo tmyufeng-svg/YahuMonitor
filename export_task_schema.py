@@ -12,6 +12,7 @@ from version import VERSION
 def build_schema():
     return {
         "version": VERSION,
+        "description": "Watch task field schema for UI integration.",
         "sources": SUPPORTED_TASK_SOURCES,
         "modes": TASK_MODES,
         "fields": TASK_FIELDS,

@@ -10,6 +10,7 @@
 - Updated the current milestone to `0.9.3-beta`.
 - Updated the current milestone to `0.9.4-beta`.
 - Updated the current milestone to `0.9.5-beta`.
+- Updated the current milestone to `0.9.6-beta`.
 
 ### Research
 
@@ -64,6 +65,8 @@
 - Added `task_editor.py` for safe local watch task edits.
 - Added shared watch task validation in `task_config.py`.
 - Added `task_config_check.py` for fast standalone task configuration checks.
+- Added `app_state.py` to build UI-ready project state.
+- Added `export_app_state.py` to export tasks, schema, categories, modes, and version data as JSON.
 
 ### Changed
 
@@ -72,6 +75,7 @@
 - Release and smoke checks now include the external task configuration files.
 - Watch task JSON writes are normalized with stable field order and mode-derived `dry_run`/`notify` values.
 - `task_editor.py` validates changes before saving them.
+- `export_task_schema.py` now labels its output as the task field schema for UI integration.
 
 ### Fixed
 

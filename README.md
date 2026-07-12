@@ -4,7 +4,7 @@ Yahoo Monitor is a Python monitor for Yahoo Flea Market search results.
 
 It scans configured keywords, stores seen items in SQLite, and sends new item notifications to Telegram.
 
-Current milestone: `v0.9.5-beta`
+Current milestone: `v0.9.6-beta`
 
 ## Features
 
@@ -117,6 +117,8 @@ Ctrl+C
 - `database.py` - SQLite storage and deduplication
 - `notifier.py` - Telegram notification sender
 - `browser_manager.py` - Playwright browser lifecycle
+- `app_state.py` - UI-ready app state builder
+- `export_app_state.py` - JSON export for future front-end integration
 - `config.py` - runtime configuration
 - `config.example.py` - reference runtime configuration
 - `watch_tasks.json` - editable watch task configuration
@@ -172,6 +174,18 @@ Export the task schema for UI integration:
 
 ```powershell
 python export_task_schema.py
+```
+
+Export the full app state for UI integration:
+
+```powershell
+python export_app_state.py
+```
+
+Save the full app state to a file:
+
+```powershell
+python export_app_state.py --output app_state.json
 ```
 
 List configured tasks:
