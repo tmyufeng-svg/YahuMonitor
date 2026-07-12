@@ -14,13 +14,17 @@ class MercariScraper:
     def __init__(self, page: Page):
         self.page = page
 
-    def build_search_url(self, keyword):
+    def build_search_url(self, keyword, category_id=None):
         encoded_keyword = quote_plus(keyword)
-
-        return (
+        url = (
             "https://jp.mercari.com/search"
             f"?keyword={encoded_keyword}"
         )
+
+        if category_id is not None:
+            url += f"&category_id={quote_plus(str(category_id))}"
+
+        return url
 
     def wait_for_search_results(self, timeout=10000):
         try:
@@ -187,9 +191,17 @@ class MercariScraper:
     def reached_limit(self, ordered_ids, limit):
         return limit is not None and len(ordered_ids) >= limit
 
-    def search_candidates(self, keyword, limit=None):
+    def search_candidates(
+        self,
+        keyword,
+        limit=None,
+        category_id=None,
+    ):
         self.page.goto(
-            self.build_search_url(keyword),
+            self.build_search_url(
+                keyword,
+                category_id=category_id,
+            ),
             wait_until="domcontentloaded",
         )
 
@@ -239,8 +251,12 @@ class MercariScraper:
             for item_id in ordered_ids
         ]
 
-    def search(self, keyword, limit=None):
-        candidates = self.search_candidates(keyword, limit=limit)
+    def search(self, keyword, limit=None, category_id=None):
+        candidates = self.search_candidates(
+            keyword,
+            limit=limit,
+            category_id=category_id,
+        )
 
         return [
             candidate["id"]

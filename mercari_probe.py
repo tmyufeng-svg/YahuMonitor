@@ -60,6 +60,10 @@ def main():
         help="Maximum candidates to print.",
     )
     parser.add_argument(
+        "--category-id",
+        help="Optional Mercari category_id query parameter.",
+    )
+    parser.add_argument(
         "--debug",
         action="store_true",
         help="Show debug logs.",
@@ -77,11 +81,15 @@ def main():
         scraper = MercariScraper(page)
 
         print(f"Mercari probe keyword: {args.keyword}")
-        print(f"Search URL: {scraper.build_search_url(args.keyword)}")
+        print(
+            "Search URL: "
+            f"{scraper.build_search_url(args.keyword, args.category_id)}"
+        )
 
         candidates = scraper.search_candidates(
             args.keyword,
             limit=args.limit,
+            category_id=args.category_id,
         )
         parsed_count = sum(
             1

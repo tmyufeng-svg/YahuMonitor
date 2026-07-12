@@ -212,11 +212,24 @@ def should_notify_items(scan):
     return scan > 1 or NOTIFY_EXISTING_ON_STARTUP
 
 
-def search_candidates(scraper, keyword, limit=None):
+def search_candidates(
+    scraper,
+    keyword,
+    limit=None,
+    category_id=None,
+):
     if USE_SEARCH_RESULT_ITEM_DETAILS:
-        return scraper.search_candidates(keyword, limit=limit)
+        return scraper.search_candidates(
+            keyword,
+            limit=limit,
+            category_id=category_id,
+        )
 
-    item_ids = scraper.search(keyword, limit=limit)
+    item_ids = scraper.search(
+        keyword,
+        limit=limit,
+        category_id=category_id,
+    )
 
     return [
         {
@@ -299,6 +312,7 @@ def scan_once(
     dry_run=False,
     notify=True,
     limit=None,
+    category_id=None,
     max_price=MAX_PRICE,
     blocked_title_keywords=None,
 ):
@@ -308,6 +322,7 @@ def scan_once(
         scraper=scraper,
         keyword=keyword,
         limit=limit,
+        category_id=category_id,
     )
     item_ids = [
         candidate["id"]
@@ -439,6 +454,7 @@ def scan_once(
         task_name=task_name,
         keyword=keyword,
         source=source,
+        category_id=category_id,
         stats={
             "found": found_count,
             "new": new_count,
@@ -523,13 +539,21 @@ def format_error_counts(error_counts):
     )
 
 
-def log_scan_summary(scan, task_name, keyword, source, stats):
+def log_scan_summary(
+    scan,
+    task_name,
+    keyword,
+    source,
+    category_id,
+    stats,
+):
     if not DETAILED_SCAN_LOGS:
         logger.info(
             f"Scan #{scan} | "
             f"Task={task_name} | "
             f"Marketplace={source} | "
             f"Keyword={keyword} | "
+            f"Category={category_id} | "
             f"Found={stats['found']} | "
             f"New={stats['new']} | "
             f"Ignored={stats['ignored']} | "
@@ -546,6 +570,7 @@ def log_scan_summary(scan, task_name, keyword, source, stats):
         f"Task={task_name} | "
         f"Marketplace={source} | "
         f"Keyword={keyword} | "
+        f"Category={category_id} | "
         f"Found={stats['found']} | "
         f"New={stats['new']} | "
         f"Ignored={stats['ignored']} | "
@@ -742,6 +767,10 @@ def task_keyword(task):
     return task.get("keyword", "")
 
 
+def task_category_id(task):
+    return task.get("category_id", None)
+
+
 def task_interval(task):
     return task.get("interval", SCAN_INTERVAL)
 
@@ -788,6 +817,7 @@ def log_watch_tasks(tasks):
             f"Name={task_name(task)} | "
             f"Marketplace={task_source(task)} | "
             f"Keyword={task_keyword(task).strip()} | "
+            f"Category={task_category_id(task)} | "
             f"Interval={task_interval(task)}s | "
             f"DryRun={task_dry_run(task)} | "
             f"Notify={task_notify(task)} | "
@@ -851,6 +881,21 @@ def validate_watch_tasks():
             raise ValueError(
                 f"WATCH_TASKS[{index}].keyword cannot be empty"
             )
+
+        category_id = task_category_id(task)
+
+        if category_id is not None:
+            if not isinstance(category_id, (int, str)):
+                raise ValueError(
+                    f"WATCH_TASKS[{index}].category_id "
+                    "must be a string, integer, or None"
+                )
+
+            if isinstance(category_id, str) and not category_id.strip():
+                raise ValueError(
+                    f"WATCH_TASKS[{index}].category_id "
+                    "cannot be blank"
+                )
 
         interval = task.get("interval", SCAN_INTERVAL)
         validate_positive_number(
@@ -1166,6 +1211,7 @@ def main():
                             dry_run=task_dry_run(task),
                             notify=task_notify(task),
                             limit=task_limit(task),
+                            category_id=task_category_id(task),
                             max_price=task_max_price(task),
                             blocked_title_keywords=task_blocked_title_keywords(
                                 task

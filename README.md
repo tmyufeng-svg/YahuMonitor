@@ -151,6 +151,8 @@ Task-level `max_price` and `blocked_title_keywords` override the global filters 
 
 Task-level `limit` controls how many unique search results are parsed per scan. Use `None` for no limit, or a small integer such as `15` when testing Mercari.
 
+Task-level `category_id` is passed to the marketplace search URL when set. Keep it as `None` until you have confirmed the category ID with a probe command.
+
 ## Mercari Probe
 
 `mercari_probe.py` can be used to test public Mercari search parsing without writing to the database or sending Telegram messages:
@@ -163,6 +165,12 @@ Limit parsed results:
 
 ```powershell
 python mercari_probe.py "Contax T3" --limit 5
+```
+
+Probe a Mercari category filter:
+
+```powershell
+python mercari_probe.py "Contax T3" --category-id 5 --limit 5 --debug
 ```
 
 `task_probe.py` can run any configured watch task once through the main scan path without Telegram and without touching `items.db`.

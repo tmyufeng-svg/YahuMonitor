@@ -1,5 +1,5 @@
 import re
-from urllib.parse import quote
+from urllib.parse import quote, urlencode
 
 from playwright.sync_api import Page
 
@@ -17,13 +17,21 @@ class YahooScraper:
             f"item/{item_id}"
         )
 
-    def build_search_url(self, keyword):
+    def build_search_url(self, keyword, category_id=None):
         encoded_keyword = quote(keyword, safe="")
-
-        return (
+        url = (
             "https://paypayfleamarket.yahoo.co.jp/"
             f"search/{encoded_keyword}"
         )
+
+        if category_id is not None:
+            url += "?" + urlencode(
+                {
+                    "category_id": category_id,
+                }
+            )
+
+        return url
 
     def extract_item_id(self, href):
         if not href:
@@ -154,10 +162,18 @@ class YahooScraper:
     def reached_limit(self, ordered_ids, limit):
         return limit is not None and len(ordered_ids) >= limit
 
-    def search_candidates(self, keyword, limit=None):
+    def search_candidates(
+        self,
+        keyword,
+        limit=None,
+        category_id=None,
+    ):
 
         self.page.goto(
-            self.build_search_url(keyword),
+            self.build_search_url(
+                keyword,
+                category_id=category_id,
+            ),
             wait_until="domcontentloaded",
         )
 
@@ -205,10 +221,13 @@ class YahooScraper:
             for item_id in ordered_ids
         ]
 
-    def search(self, keyword, limit=None):
+    def search(self, keyword, limit=None, category_id=None):
 
         self.page.goto(
-            self.build_search_url(keyword),
+            self.build_search_url(
+                keyword,
+                category_id=category_id,
+            ),
             wait_until="domcontentloaded",
         )
 
