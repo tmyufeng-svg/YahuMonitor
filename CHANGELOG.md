@@ -9,6 +9,7 @@
 - Updated the current milestone to `0.9.2-beta`.
 - Updated the current milestone to `0.9.3-beta`.
 - Updated the current milestone to `0.9.4-beta`.
+- Updated the current milestone to `0.9.5-beta`.
 
 ### Research
 
@@ -61,6 +62,8 @@
 - Added `watch_tasks.json` as the editable watch task configuration file.
 - Added `task_config.py` to load watch tasks and apply local Mercari mode overrides.
 - Added `task_editor.py` for safe local watch task edits.
+- Added shared watch task validation in `task_config.py`.
+- Added `task_config_check.py` for fast standalone task configuration checks.
 
 ### Changed
 
@@ -68,6 +71,7 @@
 - `config.py` now keeps runtime settings while task editing happens in JSON.
 - Release and smoke checks now include the external task configuration files.
 - Watch task JSON writes are normalized with stable field order and mode-derived `dry_run`/`notify` values.
+- `task_editor.py` validates changes before saving them.
 
 ### Fixed
 

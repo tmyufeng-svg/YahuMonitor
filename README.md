@@ -4,7 +4,7 @@ Yahoo Monitor is a Python monitor for Yahoo Flea Market search results.
 
 It scans configured keywords, stores seen items in SQLite, and sends new item notifications to Telegram.
 
-Current milestone: `v0.9.4-beta`
+Current milestone: `v0.9.5-beta`
 
 ## Features
 
@@ -121,6 +121,7 @@ Ctrl+C
 - `config.example.py` - reference runtime configuration
 - `watch_tasks.json` - editable watch task configuration
 - `task_config.py` - watch task JSON loader and local mode overrides
+- `task_config_check.py` - watch task configuration validator
 - `task_editor.py` - safe local watch task editor
 - `config_check.py` - local configuration validator
 - `release_check.py` - local V1.0 readiness checker
@@ -179,6 +180,12 @@ List configured tasks:
 python task_editor.py list
 ```
 
+Validate task configuration:
+
+```powershell
+python task_config_check.py
+```
+
 Enable or disable a task by list index:
 
 ```powershell
@@ -203,6 +210,8 @@ Add a disabled Mercari parser trial task:
 ```powershell
 python task_editor.py add --source mercari --keyword "Contax T2" --mode dry-run --interval 10 --limit 15 --disabled
 ```
+
+The editor validates task changes before saving. It rejects empty keywords, invalid modes, unknown category aliases, invalid numeric fields, and duplicate enabled Mercari modes for the same keyword.
 
 The current main loop supports Yahoo tasks and can dispatch Mercari tasks when explicitly enabled. Mercari remains disabled by default while public search parsing is tested.
 

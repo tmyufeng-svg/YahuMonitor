@@ -1,8 +1,8 @@
 # Yahoo Monitor Roadmap
 
-## Current Version: 0.9.4-beta
+## Current Version: 0.9.5-beta
 
-This version is the watch task editor beta.
+This version is the watch task validation beta.
 
 Before calling the project V1.0, run:
 
@@ -25,6 +25,7 @@ The immediate goal is to make configured watch tasks run safely and repeatably:
 - Stable task `mode` field for future UI editing
 - Editable `watch_tasks.json` task configuration for future front-end work
 - Safe local task editor for listing, enabling, disabling, changing modes, and adding tasks
+- Shared watch task validation for the editor, config checks, and future front-end work
 
 Useful test commands:
 
@@ -57,6 +58,7 @@ Minimum V1.0 gate:
 - The setup flow in `README.md` works from a fresh clone.
 - `watch_tasks.json` can be edited without touching Python files.
 - `task_editor.py` can make common task changes without hand-editing JSON.
+- `task_config_check.py` catches invalid task configuration before the monitor starts.
 - `release_check.py` passes.
 
 ## V1.x Target: Better Operator Experience

@@ -5,6 +5,7 @@ from task_config import (
     load_watch_tasks,
     normalize_watch_task,
     save_watch_tasks,
+    validate_watch_tasks,
 )
 from task_schema import SUPPORTED_TASK_SOURCES, valid_task_modes
 
@@ -60,6 +61,7 @@ def resolve_task(tasks, target):
 
 def command_list(args):
     tasks = load_tasks(args.file)
+    validate_watch_tasks(tasks)
 
     for index, task in enumerate(tasks, start=1):
         print_task(index, task)
@@ -71,6 +73,7 @@ def command_enable(args):
     tasks = load_tasks(args.file)
     index = resolve_task(tasks, args.target)
     tasks[index]["enabled"] = True
+    validate_watch_tasks(tasks)
     save_watch_tasks(args.file, tasks)
     print(f"Enabled task: {tasks[index].get('task_name')}")
 
@@ -79,6 +82,7 @@ def command_disable(args):
     tasks = load_tasks(args.file)
     index = resolve_task(tasks, args.target)
     tasks[index]["enabled"] = False
+    validate_watch_tasks(tasks)
     save_watch_tasks(args.file, tasks)
     print(f"Disabled task: {tasks[index].get('task_name')}")
 
@@ -88,6 +92,7 @@ def command_set_mode(args):
     index = resolve_task(tasks, args.target)
     tasks[index]["mode"] = args.mode
     tasks[index] = normalize_watch_task(tasks[index])
+    validate_watch_tasks(tasks)
     save_watch_tasks(args.file, tasks)
     print(
         f"Updated task mode: "
@@ -113,6 +118,7 @@ def command_add(args):
     normalized_task = normalize_watch_task(task)
     tasks = load_tasks(args.file)
     tasks.append(normalized_task)
+    validate_watch_tasks(tasks)
     save_watch_tasks(args.file, tasks)
     print(f"Added task: {normalized_task.get('task_name')}")
 
