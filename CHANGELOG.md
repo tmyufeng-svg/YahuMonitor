@@ -2,6 +2,10 @@
 
 ## v0.9.x
 
+### Version
+
+- Marked the current milestone as `0.9.0-beta`.
+
 ### Research
 
 - Started Mercari feasibility research for a public-search-only monitor.
@@ -42,6 +46,9 @@
 - Added `list_categories.py` to inspect configured category aliases.
 - Added bounded main runs with `--once` and `--max-cycles`.
 - Added `--skip-startup-message` for faster local task testing.
+- Added `version.py` and `main.py --version`.
+- Added `release_check.py` for local V1.0 readiness checks.
+- Added `smoke_check.py` for local syntax smoke checks.
 
 ### Fixed
 

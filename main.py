@@ -32,6 +32,7 @@ from database import Database
 from logger import logger
 from mercari import MercariScraper
 from notifier import TelegramNotifier
+from version import VERSION, version_label
 from yahoo import YahooScraper
 
 
@@ -1173,6 +1174,11 @@ def parse_args():
         action="store_true",
         help="Skip Telegram startup test message.",
     )
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=version_label(),
+    )
 
     args = parser.parse_args()
 
@@ -1239,6 +1245,7 @@ def main():
 
         logger.info(
             "Yahoo Monitor started | "
+            f"Version={VERSION} | "
             f"Tasks={len(tasks)} | "
             f"MaxCycles={args.max_cycles} | "
             f"BlockedTitleKeywords={len(BLOCKED_TITLE_KEYWORDS)} | "

@@ -1,5 +1,17 @@
 # Yahoo Monitor Roadmap
 
+## Current Version: 0.9.0-beta
+
+This version is the multi-marketplace task beta.
+
+Before calling the project V1.0, run:
+
+```powershell
+python release_check.py
+```
+
+Then complete the manual checks printed by the script.
+
 ## Current Focus: Make Tasks Run Reliably
 
 The immediate goal is to make configured watch tasks run safely and repeatably:
@@ -31,6 +43,14 @@ V1.0 should be a stable search-result monitor:
 - Basic front-end configuration UI
 
 This version watches public search pages. It can be useful, but it should not be expected to beat paid monitors that detect items before search indexes update.
+
+Minimum V1.0 gate:
+
+- Yahoo monitor runs for multiple cycles without errors.
+- Mercari dry-run and silent modes work from `main.py`.
+- Mercari notify mode is tested with controlled settings.
+- The setup flow in `README.md` works from a fresh clone.
+- `release_check.py` passes.
 
 ## V1.x Target: Better Operator Experience
 
