@@ -44,8 +44,7 @@ KEYWORDS = [
 
 # Watch tasks are the long-term configuration format.
 # Each task can later carry source-specific category and filter settings.
-# The per-task interval is validated now and will be used by the scheduler
-# in the next V0.9 step.
+# The per-task interval is used by the scheduler.
 WATCH_TASKS = [
     {
         "source": "yahoo",
@@ -55,6 +54,14 @@ WATCH_TASKS = [
         "enabled": True,
     }
     for keyword in KEYWORDS
+] + [
+    {
+        "source": "mercari",
+        "keyword": "Contax T3",
+        "interval": 10,
+        "category_id": None,
+        "enabled": False,
+    },
 ]
 
 

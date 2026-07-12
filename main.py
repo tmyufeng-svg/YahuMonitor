@@ -24,13 +24,16 @@ from config import (
 )
 from database import Database
 from logger import logger
+from mercari import MercariScraper
 from notifier import TelegramNotifier
 from yahoo import YahooScraper
 
 
 YAHOO_SOURCE = "yahoo"
+MERCARI_SOURCE = "mercari"
 SUPPORTED_SOURCES = {
     YAHOO_SOURCE,
+    MERCARI_SOURCE,
 }
 
 
@@ -56,7 +59,7 @@ def current_detected_at():
 
 
 def process_item(
-    yahoo,
+    scraper,
     db,
     notifier,
     item_id,
@@ -78,7 +81,7 @@ def process_item(
         )
 
         if listing_item is None:
-            item = yahoo.get_item(item_id)
+            item = scraper.get_item(item_id)
 
         else:
             item = listing_item
@@ -168,11 +171,11 @@ def should_notify_items(scan):
     return scan > 1 or NOTIFY_EXISTING_ON_STARTUP
 
 
-def search_candidates(yahoo, keyword):
+def search_candidates(scraper, keyword):
     if USE_SEARCH_RESULT_ITEM_DETAILS:
-        return yahoo.search_candidates(keyword)
+        return scraper.search_candidates(keyword)
 
-    item_ids = yahoo.search(keyword)
+    item_ids = scraper.search(keyword)
 
     return [
         {
@@ -185,7 +188,7 @@ def search_candidates(yahoo, keyword):
 
 
 def save_startup_baseline_items(
-    yahoo,
+    scraper,
     db,
     item_ids,
     keyword,
@@ -194,7 +197,7 @@ def save_startup_baseline_items(
     baseline_items = [
         (
             item_id,
-            yahoo.build_item_url(item_id),
+            scraper.build_item_url(item_id),
         )
         for item_id in item_ids
     ]
@@ -214,7 +217,7 @@ def save_startup_baseline_items(
 
 
 def scan_once(
-    yahoo,
+    scraper,
     db,
     notifier,
     keyword,
@@ -224,7 +227,7 @@ def scan_once(
     start = time.perf_counter()
 
     candidates = search_candidates(
-        yahoo=yahoo,
+        scraper=scraper,
         keyword=keyword,
     )
     item_ids = [
@@ -269,7 +272,7 @@ def scan_once(
 
     if not notify_item:
         baseline_count = save_startup_baseline_items(
-            yahoo=yahoo,
+            scraper=scraper,
             db=db,
             item_ids=[
                 candidate["id"]
@@ -293,7 +296,7 @@ def scan_once(
                 )
 
             result = process_item(
-                yahoo=yahoo,
+                scraper=scraper,
                 db=db,
                 notifier=notifier,
                 item_id=item_id,
@@ -778,10 +781,17 @@ def send_startup_check(notifier, task_count):
     logger.info("Telegram delivery OK")
 
 
-def rebuild_scraper(browser_manager):
+def create_scrapers(page):
+    return {
+        YAHOO_SOURCE: YahooScraper(page),
+        MERCARI_SOURCE: MercariScraper(page),
+    }
+
+
+def rebuild_scrapers(browser_manager):
     page = browser_manager.restart()
 
-    return YahooScraper(page)
+    return create_scrapers(page)
 
 
 def can_restart_browser(restart_count):
@@ -834,7 +844,7 @@ def main():
         browser_manager = BrowserManager()
         page = browser_manager.start()
 
-        yahoo = YahooScraper(page)
+        scrapers = create_scrapers(page)
 
         logger.info(
             "Yahoo Monitor started | "
@@ -866,7 +876,7 @@ def main():
 
                     try:
                         scan_stats = scan_once(
-                            yahoo=yahoo,
+                            scraper=scrapers[source],
                             db=db,
                             notifier=notifier,
                             keyword=keyword,
@@ -900,7 +910,7 @@ def main():
                             break
 
                         restart_count += 1
-                        yahoo = rebuild_scraper(browser_manager)
+                        scrapers = rebuild_scrapers(browser_manager)
 
                 log_cycle_summary(
                     scan=scan,
@@ -927,7 +937,7 @@ def main():
                     continue
 
                 restart_count += 1
-                yahoo = rebuild_scraper(browser_manager)
+                scrapers = rebuild_scrapers(browser_manager)
 
     except KeyboardInterrupt:
         shutdown_requested = True

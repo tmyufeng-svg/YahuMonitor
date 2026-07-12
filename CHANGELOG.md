@@ -16,6 +16,7 @@
 - Added an experimental Mercari public search scraper module, not yet wired into the main monitor loop.
 - Added a Mercari probe script for manual public search parser testing without database writes or Telegram notifications.
 - Mercari probe now prints page diagnostics when no item links are found.
+- Added disabled Mercari watch task support in the main source dispatch path.
 
 ### Fixed
 

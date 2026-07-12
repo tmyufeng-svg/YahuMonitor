@@ -4,7 +4,7 @@ Yahoo Monitor is a Python monitor for Yahoo Flea Market search results.
 
 It scans configured keywords, stores seen items in SQLite, and sends new item notifications to Telegram.
 
-Current milestone: `v0.8.0`
+Current milestone: `v0.9.x`
 
 ## Features
 
@@ -16,6 +16,7 @@ Current milestone: `v0.8.0`
 - Search-result item parsing to reduce detail page visits
 - Compact runtime and scan summary logs
 - Watch task configuration for future source/category scheduling
+- Disabled Mercari task support for conservative public-search testing
 - Graceful Ctrl+C shutdown
 
 ## Setup
@@ -59,7 +60,7 @@ Ctrl+C
 
 - `main.py` - monitor loop
 - `yahoo.py` - Yahoo Flea Market scraper
-- `mercari.py` - experimental Mercari public search scraper, not yet enabled in the main loop
+- `mercari.py` - experimental Mercari public search scraper
 - `database.py` - SQLite storage and deduplication
 - `notifier.py` - Telegram notification sender
 - `browser_manager.py` - Playwright browser lifecycle
@@ -82,7 +83,21 @@ WATCH_TASKS = [
 ]
 ```
 
-The current main loop supports Yahoo tasks. Mercari support is being developed conservatively through public search pages first.
+The current main loop supports Yahoo tasks and can dispatch Mercari tasks when explicitly enabled. Mercari remains disabled by default while public search parsing is tested.
+
+## Mercari Probe
+
+`mercari_probe.py` can be used to test public Mercari search parsing without writing to the database or sending Telegram messages:
+
+```powershell
+python mercari_probe.py "Contax T3"
+```
+
+Limit printed results:
+
+```powershell
+python mercari_probe.py "Contax T3" --limit 5
+```
 
 ## Safety Notes
 
