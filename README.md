@@ -74,6 +74,7 @@ Ctrl+C
 ```python
 WATCH_TASKS = [
     {
+        "task_name": "Yahoo | Contax T3",
         "source": "yahoo",
         "keyword": "Contax T3",
         "interval": 2,
@@ -86,6 +87,8 @@ WATCH_TASKS = [
     },
 ]
 ```
+
+`task_name` is a readable label used in startup, scan, and error logs. If it is omitted, the monitor uses `source:keyword`.
 
 The current main loop supports Yahoo tasks and can dispatch Mercari tasks when explicitly enabled. Mercari remains disabled by default while public search parsing is tested.
 

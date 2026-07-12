@@ -21,6 +21,7 @@
 - Added dry-run item sample logs for parsed title, price, and URL checks.
 - Added task-level price and blocked-title filter overrides.
 - Added task-level notification disable mode that stores new items as `silent`.
+- Added task names and startup task list logging.
 
 ### Fixed
 

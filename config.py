@@ -48,6 +48,7 @@ KEYWORDS = [
 # The per-task interval is used by the scheduler.
 WATCH_TASKS = [
     {
+        "task_name": f"Yahoo | {keyword}",
         "source": "yahoo",
         "keyword": keyword,
         "interval": SCAN_INTERVAL,
@@ -61,6 +62,7 @@ WATCH_TASKS = [
     for keyword in KEYWORDS
 ] + [
     {
+        "task_name": "Mercari dry run | Contax T3",
         "source": "mercari",
         "keyword": "Contax T3",
         "interval": 10,

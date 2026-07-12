@@ -67,6 +67,7 @@ def process_item(
     keyword,
     listing_item=None,
     source=YAHOO_SOURCE,
+    task_name=None,
     notify=True,
     max_price=MAX_PRICE,
     blocked_title_keywords=None,
@@ -84,6 +85,7 @@ def process_item(
 
         logger.info(
             f"[{keyword}] NEW {item_id} | "
+            f"Task={task_name} | "
             f"Marketplace={source} | "
             f"Source={item_source} | "
             f"DetectedAt={detected_at}"
@@ -110,6 +112,7 @@ def process_item(
             )
             logger.info(
                 f"[{keyword}] Ignored {item.id} | "
+                f"Task={task_name} | "
                 f"Marketplace={source} | "
                 f"Source={item_source} | "
                 f"DetectedAt={detected_at} | "
@@ -132,6 +135,7 @@ def process_item(
             )
             logger.info(
                 f"[{keyword}] Ignored {item.id} | "
+                f"Task={task_name} | "
                 f"Marketplace={source} | "
                 f"Source={item_source} | "
                 f"DetectedAt={detected_at} | "
@@ -155,6 +159,7 @@ def process_item(
             )
             logger.info(
                 f"[{keyword}] Saved without notification {item.id} | "
+                f"Task={task_name} | "
                 f"Marketplace={source} | "
                 f"Source={item_source} | "
                 f"DetectedAt={detected_at} | "
@@ -177,6 +182,7 @@ def process_item(
 
         logger.info(
             f"[{keyword}] Notified and saved {item.id} | "
+            f"Task={task_name} | "
             f"Marketplace={source} | "
             f"Source={item_source} | "
             f"DetectedAt={detected_at}"
@@ -192,7 +198,8 @@ def process_item(
 
     except Exception:
         logger.exception(
-            f"[{keyword}] Item processing failed | Item={item_id}"
+            f"[{keyword}] Item processing failed | "
+            f"Task={task_name} | Item={item_id}"
         )
 
         return {
@@ -250,7 +257,7 @@ def save_startup_baseline_items(
     return saved_count
 
 
-def log_dry_run_samples(keyword, source, candidates):
+def log_dry_run_samples(keyword, source, task_name, candidates):
     if DRY_RUN_SAMPLE_LIMIT <= 0:
         return
 
@@ -263,6 +270,7 @@ def log_dry_run_samples(keyword, source, candidates):
         if item is None:
             logger.info(
                 f"[{keyword}] Dry run sample #{index} | "
+                f"Task={task_name} | "
                 f"Marketplace={source} | "
                 f"Item={candidate['id']} | "
                 f"ParseError={candidate.get('parse_error')}"
@@ -271,6 +279,7 @@ def log_dry_run_samples(keyword, source, candidates):
 
         logger.info(
             f"[{keyword}] Dry run sample #{index} | "
+            f"Task={task_name} | "
             f"Marketplace={source} | "
             f"Item={item.id} | "
             f"Price={item.price:,} | "
@@ -286,6 +295,7 @@ def scan_once(
     keyword,
     scan,
     source=YAHOO_SOURCE,
+    task_name=None,
     dry_run=False,
     notify=True,
     max_price=MAX_PRICE,
@@ -349,12 +359,14 @@ def scan_once(
             )
             logger.info(
                 f"[{keyword}] Dry run found {dry_run_count} "
-                f"new candidates | Marketplace={source} | "
+                f"new candidates | Task={task_name} | "
+                f"Marketplace={source} | "
                 f"Sample={sample_ids}"
             )
             log_dry_run_samples(
                 keyword=keyword,
                 source=source,
+                task_name=task_name,
                 candidates=new_candidates,
             )
 
@@ -391,6 +403,7 @@ def scan_once(
                 keyword=keyword,
                 listing_item=listing_item,
                 source=source,
+                task_name=task_name,
                 notify=notify,
                 max_price=max_price,
                 blocked_title_keywords=blocked_title_keywords,
@@ -421,6 +434,7 @@ def scan_once(
 
     log_scan_summary(
         scan=scan,
+        task_name=task_name,
         keyword=keyword,
         source=source,
         stats={
@@ -507,10 +521,11 @@ def format_error_counts(error_counts):
     )
 
 
-def log_scan_summary(scan, keyword, source, stats):
+def log_scan_summary(scan, task_name, keyword, source, stats):
     if not DETAILED_SCAN_LOGS:
         logger.info(
             f"Scan #{scan} | "
+            f"Task={task_name} | "
             f"Marketplace={source} | "
             f"Keyword={keyword} | "
             f"Found={stats['found']} | "
@@ -526,6 +541,7 @@ def log_scan_summary(scan, keyword, source, stats):
 
     logger.info(
         f"Scan #{scan} | "
+        f"Task={task_name} | "
         f"Marketplace={source} | "
         f"Keyword={keyword} | "
         f"Found={stats['found']} | "
@@ -707,6 +723,15 @@ def task_is_enabled(task):
     return task.get("enabled", True)
 
 
+def task_name(task):
+    name = task.get("task_name")
+
+    if isinstance(name, str) and name.strip():
+        return name.strip()
+
+    return f"{task_source(task)}:{task_keyword(task).strip()}"
+
+
 def task_source(task):
     return task.get("source", YAHOO_SOURCE)
 
@@ -748,6 +773,24 @@ def active_watch_tasks():
     ]
 
 
+def log_watch_tasks(tasks):
+    logger.info(f"Active watch tasks: {len(tasks)}")
+
+    for index, task in enumerate(tasks, start=1):
+        logger.info(
+            f"Task #{index} | "
+            f"Name={task_name(task)} | "
+            f"Marketplace={task_source(task)} | "
+            f"Keyword={task_keyword(task).strip()} | "
+            f"Interval={task_interval(task)}s | "
+            f"DryRun={task_dry_run(task)} | "
+            f"Notify={task_notify(task)} | "
+            f"MaxPrice={task_max_price(task)} | "
+            f"BlockedTitleKeywords="
+            f"{len(task_blocked_title_keywords(task))}"
+        )
+
+
 def validate_watch_tasks():
     if not isinstance(WATCH_TASKS, list):
         raise ValueError("WATCH_TASKS must be a list")
@@ -777,6 +820,16 @@ def validate_watch_tasks():
             continue
 
         enabled_count += 1
+
+        name = task.get("task_name", None)
+
+        if name is not None and (
+            not isinstance(name, str)
+            or not name.strip()
+        ):
+            raise ValueError(
+                f"WATCH_TASKS[{index}].task_name must be a string or None"
+            )
 
         source = task_source(task)
 
@@ -987,6 +1040,7 @@ def main():
     try:
         validate_runtime_config()
         tasks = active_watch_tasks()
+        log_watch_tasks(tasks)
         task_states = initialize_task_states(tasks)
 
         db = Database(
@@ -1052,6 +1106,7 @@ def main():
                     task = task_state["task"]
                     source = task_source(task)
                     keyword = task_keyword(task).strip()
+                    name = task_name(task)
 
                     try:
                         scan_stats = scan_once(
@@ -1061,6 +1116,7 @@ def main():
                             keyword=keyword,
                             scan=scan,
                             source=source,
+                            task_name=name,
                             dry_run=task_dry_run(task),
                             notify=task_notify(task),
                             max_price=task_max_price(task),
@@ -1083,6 +1139,7 @@ def main():
                         logger.exception(
                             "Keyword scan failed | "
                             f"Scan=#{scan} | "
+                            f"Task={name} | "
                             f"Marketplace={source} | "
                             f"Keyword={keyword}"
                         )
