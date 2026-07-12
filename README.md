@@ -4,7 +4,7 @@ Yahoo Monitor is a Python monitor for Yahoo Flea Market search results.
 
 It scans configured keywords, stores seen items in SQLite, and sends new item notifications to Telegram.
 
-Current milestone: `v0.9.8-beta`
+Current milestone: `v0.9.9-beta`
 
 ## Features
 
@@ -85,6 +85,8 @@ Run local syntax smoke checks:
 python smoke_check.py
 ```
 
+Before tagging a V1.0 beta or stable release, follow `RELEASE_CHECKLIST.md`.
+
 ## Run
 
 ```powershell
@@ -135,6 +137,7 @@ Ctrl+C
 - `categories.py` - marketplace category alias catalog
 - `list_categories.py` - category alias listing tool
 - `ROADMAP.md` - milestone plan from stable search monitor to earlier detection
+- `RELEASE_CHECKLIST.md` - V1.0 release checklist
 - `logger.py` - console and file logging
 
 ## Watch Tasks

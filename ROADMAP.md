@@ -1,8 +1,8 @@
 # Yahoo Monitor Roadmap
 
-## Current Version: 0.9.8-beta
+## Current Version: 0.9.9-beta
 
-This version is the dashboard task export beta.
+This version is the V1.0 release readiness beta.
 
 Before calling the project V1.0, run:
 
@@ -29,6 +29,7 @@ The immediate goal is to make configured watch tasks run safely and repeatably:
 - UI-ready JSON export for tasks, schema, categories, modes, and version state
 - Read-only local dashboard for viewing configured tasks from `app_state.json`
 - Dashboard editing for enabled status, mode, interval, and limit with JSON download
+- V1.0 release checklist and stronger release readiness checks
 
 Useful test commands:
 
@@ -65,6 +66,7 @@ Minimum V1.0 gate:
 - `export_app_state.py` provides the data shape needed by a local front-end.
 - `dashboard.html` can display task status without installing front-end dependencies.
 - `dashboard.html` can export an updated `watch_tasks.json` for manual review and replacement.
+- `RELEASE_CHECKLIST.md` documents the final V1.0 verification flow.
 - `release_check.py` passes.
 
 ## V1.x Target: Better Operator Experience

@@ -13,6 +13,7 @@
 - Updated the current milestone to `0.9.6-beta`.
 - Updated the current milestone to `0.9.7-beta`.
 - Updated the current milestone to `0.9.8-beta`.
+- Updated the current milestone to `0.9.9-beta`.
 
 ### Research
 
@@ -72,6 +73,7 @@
 - Added `dashboard.html` as a local read-only task dashboard prototype.
 - Dashboard can now edit enabled status, mode, interval, and limit in memory.
 - Dashboard can now download an updated `watch_tasks.json`.
+- Added `RELEASE_CHECKLIST.md` for V1.0 release verification.
 
 ### Changed
 
@@ -81,6 +83,7 @@
 - Watch task JSON writes are normalized with stable field order and mode-derived `dry_run`/`notify` values.
 - `task_editor.py` validates changes before saving them.
 - `export_task_schema.py` now labels its output as the task field schema for UI integration.
+- `release_check.py` now checks `.env.example`, `watch_tasks.json`, dashboard basics, and additional required project files.
 
 ### Fixed
 
