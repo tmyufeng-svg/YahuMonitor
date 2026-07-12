@@ -4,7 +4,7 @@ Yahoo Monitor is a Python monitor for Yahoo Flea Market search results.
 
 It scans configured keywords, stores seen items in SQLite, and sends new item notifications to Telegram.
 
-Current milestone: `v0.9.2-beta`
+Current milestone: `v0.9.3-beta`
 
 ## Features
 
@@ -38,31 +38,32 @@ ENABLE_MERCARI_SILENT_TASK=false
 ENABLE_MERCARI_NOTIFY_TASK=false
 CONFIRM_MERCARI_NOTIFY=false
 MERCARI_NOTIFY_RESULT_LIMIT=5
+WATCH_TASKS_FILE=watch_tasks.json
 ```
 
-Edit `config.py` for watch tasks and runtime settings:
+Edit `watch_tasks.json` for watch tasks:
 
-```python
-WATCH_TASKS = [
-    {
-        "task_name": "Yahoo | Contax T3",
-        "source": "yahoo",
-        "keyword": "Contax T3",
-        "interval": 2,
-        "category_key": "all",
-        "category_id": None,
-        "mode": "notify",
-        "dry_run": False,
-        "notify": True,
-        "max_price": None,
-        "blocked_title_keywords": None,
-        "limit": None,
-        "enabled": True,
-    },
+```json
+[
+  {
+    "task_name": "Yahoo | Contax T3",
+    "source": "yahoo",
+    "keyword": "Contax T3",
+    "interval": 2,
+    "category_key": "all",
+    "category_id": null,
+    "mode": "notify",
+    "dry_run": false,
+    "notify": true,
+    "max_price": null,
+    "blocked_title_keywords": null,
+    "limit": null,
+    "enabled": true
+  }
 ]
 ```
 
-`config.example.py` contains a complete reference configuration.
+`config.py` still contains runtime settings. `config.example.py` contains a complete reference configuration.
 
 The default `config.py` also includes Mercari dry-run, silent, and notification templates. They are controlled by local `.env` switches and stay disabled by default.
 
@@ -118,6 +119,8 @@ Ctrl+C
 - `browser_manager.py` - Playwright browser lifecycle
 - `config.py` - runtime configuration
 - `config.example.py` - reference runtime configuration
+- `watch_tasks.json` - editable watch task configuration
+- `task_config.py` - watch task JSON loader and local mode overrides
 - `config_check.py` - local configuration validator
 - `release_check.py` - local V1.0 readiness checker
 - `smoke_check.py` - local syntax smoke check runner
@@ -131,25 +134,25 @@ Ctrl+C
 
 ## Watch Tasks
 
-`WATCH_TASKS` in `config.py` is the main configuration format:
+`watch_tasks.json` is the main task configuration format:
 
-```python
-WATCH_TASKS = [
-    {
-        "task_name": "Yahoo | Contax T3",
-        "source": "yahoo",
-        "keyword": "Contax T3",
-        "interval": 2,
-        "category_key": "all",
-        "category_id": None,
-        "mode": "notify",
-        "dry_run": False,
-        "notify": True,
-        "max_price": None,
-        "blocked_title_keywords": None,
-        "limit": None,
-        "enabled": True,
-    },
+```json
+[
+  {
+    "task_name": "Yahoo | Contax T3",
+    "source": "yahoo",
+    "keyword": "Contax T3",
+    "interval": 2,
+    "category_key": "all",
+    "category_id": null,
+    "mode": "notify",
+    "dry_run": false,
+    "notify": true,
+    "max_price": null,
+    "blocked_title_keywords": null,
+    "limit": null,
+    "enabled": true
+  }
 ]
 ```
 
@@ -201,17 +204,17 @@ CONFIRM_MERCARI_NOTIFY=true
 
 `python set_mercari_mode.py notify` sets both values for local testing. `MERCARI_NOTIFY_RESULT_LIMIT` keeps the initial notify trial small.
 
-Set `dry_run` to `True` for a task when you want to test parsing inside the main loop without sending Telegram notifications or writing new items to the database.
+Set `dry_run` to `true` for a task when you want to test parsing inside the main loop without sending Telegram notifications or writing new items to the database.
 
-Set `notify` to `False` for a task when you want to save new items to the database with status `silent` but skip Telegram notifications.
+Set `notify` to `false` for a task when you want to save new items to the database with status `silent` but skip Telegram notifications.
 
 `DRY_RUN_SAMPLE_LIMIT` controls how many parsed dry-run items are printed to the log for each scan.
 
-Task-level `max_price` and `blocked_title_keywords` override the global filters when they are set. Use `None` to keep the global default.
+Task-level `max_price` and `blocked_title_keywords` override the global filters when they are set. Use `null` to keep the global default.
 
-Task-level `limit` controls how many unique search results are parsed per scan. Use `None` for no limit, or a small integer such as `15` when testing Mercari.
+Task-level `limit` controls how many unique search results are parsed per scan. Use `null` for no limit, or a small integer such as `15` when testing Mercari.
 
-Task-level `category_id` is passed to the marketplace search URL when set. Keep it as `None` until you have confirmed the category ID with a probe command.
+Task-level `category_id` is passed to the marketplace search URL when set. Keep it as `null` until you have confirmed the category ID with a probe command.
 
 Task-level `category_key` is a named alias for future UI selection. `category_id` wins when both fields are set.
 
@@ -288,55 +291,61 @@ Mercari is available as an optional public-search task. Keep it disabled until p
 
 Safe parser test inside the main loop:
 
-```python
+```json
 {
-    "task_name": "Mercari dry run | Contax T3",
-    "source": "mercari",
-    "keyword": "Contax T3",
-    "interval": 10,
-    "category_id": None,
-    "dry_run": True,
-    "notify": False,
-    "max_price": None,
-    "blocked_title_keywords": None,
-    "limit": 15,
-    "enabled": True,
+  "task_name": "Mercari dry run | Contax T3",
+  "source": "mercari",
+  "keyword": "Contax T3",
+  "interval": 10,
+  "category_key": "all",
+  "category_id": null,
+  "mode": "dry-run",
+  "dry_run": true,
+  "notify": false,
+  "max_price": null,
+  "blocked_title_keywords": null,
+  "limit": 15,
+  "enabled": true
 }
 ```
 
 Database-only trial without phone notifications:
 
-```python
+```json
 {
-    "task_name": "Mercari silent | Contax T3",
-    "source": "mercari",
-    "keyword": "Contax T3",
-    "interval": 10,
-    "category_id": None,
-    "dry_run": False,
-    "notify": False,
-    "max_price": None,
-    "blocked_title_keywords": None,
-    "limit": 15,
-    "enabled": True,
+  "task_name": "Mercari silent | Contax T3",
+  "source": "mercari",
+  "keyword": "Contax T3",
+  "interval": 10,
+  "category_key": "all",
+  "category_id": null,
+  "mode": "silent",
+  "dry_run": false,
+  "notify": false,
+  "max_price": null,
+  "blocked_title_keywords": null,
+  "limit": 15,
+  "enabled": true
 }
 ```
 
 Live notification mode:
 
-```python
+```json
 {
-    "task_name": "Mercari notify | Contax T3",
-    "source": "mercari",
-    "keyword": "Contax T3",
-    "interval": 10,
-    "category_id": None,
-    "dry_run": False,
-    "notify": True,
-    "max_price": None,
-    "blocked_title_keywords": None,
-    "limit": 15,
-    "enabled": True,
+  "task_name": "Mercari notify | Contax T3",
+  "source": "mercari",
+  "keyword": "Contax T3",
+  "interval": 10,
+  "category_key": "all",
+  "category_id": null,
+  "mode": "notify",
+  "dry_run": false,
+  "notify": true,
+  "max_price": null,
+  "blocked_title_keywords": null,
+  "limit": 5,
+  "enabled": true
 }
 ```
 

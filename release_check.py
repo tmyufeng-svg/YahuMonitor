@@ -9,6 +9,8 @@ REQUIRED_FILES = [
     "ROADMAP.md",
     "CHANGELOG.md",
     "requirements.txt",
+    "watch_tasks.json",
+    "task_config.py",
     "task_schema.py",
     "export_task_schema.py",
     "main.py",

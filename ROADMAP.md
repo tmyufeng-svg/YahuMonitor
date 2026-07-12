@@ -1,8 +1,8 @@
 # Yahoo Monitor Roadmap
 
-## Current Version: 0.9.2-beta
+## Current Version: 0.9.3-beta
 
-This version is the task configuration schema beta.
+This version is the external watch task configuration beta.
 
 Before calling the project V1.0, run:
 
@@ -23,6 +23,7 @@ The immediate goal is to make configured watch tasks run safely and repeatably:
 - Mercari notification mode requires explicit local confirmation
 - Task-level interval, limit, category, price, and title filters
 - Stable task `mode` field for future UI editing
+- Editable `watch_tasks.json` task configuration for future front-end work
 
 Useful test commands:
 
@@ -43,6 +44,7 @@ V1.0 should be a stable search-result monitor:
 - Safe local configuration through `.env`
 - Repeatable test and probe commands
 - Basic front-end configuration UI
+- JSON-based task configuration that the UI can read and write safely
 
 This version watches public search pages. It can be useful, but it should not be expected to beat paid monitors that detect items before search indexes update.
 
@@ -52,6 +54,7 @@ Minimum V1.0 gate:
 - Mercari dry-run and silent modes work from `main.py`.
 - Mercari notify mode is tested with controlled settings.
 - The setup flow in `README.md` works from a fresh clone.
+- `watch_tasks.json` can be edited without touching Python files.
 - `release_check.py` passes.
 
 ## V1.x Target: Better Operator Experience

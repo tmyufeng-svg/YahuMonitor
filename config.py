@@ -2,6 +2,11 @@ import os
 
 from dotenv import load_dotenv
 
+from task_config import (
+    apply_mercari_env_overrides,
+    load_watch_tasks,
+)
+
 
 load_dotenv()
 
@@ -57,6 +62,10 @@ USE_SEARCH_RESULT_ITEM_DETAILS = True
 FORCE_EXIT_AFTER_CTRL_C = True
 DETAILED_SCAN_LOGS = False
 DRY_RUN_SAMPLE_LIMIT = 5
+WATCH_TASKS_FILE = os.getenv(
+    "WATCH_TASKS_FILE",
+    "watch_tasks.json",
+)
 
 
 # Local Mercari activation switches.
@@ -83,86 +92,14 @@ MERCARI_NOTIFY_RESULT_LIMIT = env_int(
 )
 
 
-# Watch tasks are the main configuration format.
-# Each task can carry source-specific category and filter settings.
-# The per-task interval is used by the scheduler.
-WATCH_TASKS = [
-    {
-        "task_name": "Yahoo | Contax T3",
-        "source": "yahoo",
-        "keyword": "Contax T3",
-        "interval": SCAN_INTERVAL,
-        "category_key": "all",
-        "category_id": None,
-        "mode": "notify",
-        "dry_run": False,
-        "notify": True,
-        "max_price": None,
-        "blocked_title_keywords": None,
-        "limit": None,
-        "enabled": True,
-    },
-    {
-        "task_name": "Yahoo | Nikon L35AF",
-        "source": "yahoo",
-        "keyword": "Nikon L35AF",
-        "interval": SCAN_INTERVAL,
-        "category_key": "all",
-        "category_id": None,
-        "mode": "notify",
-        "dry_run": False,
-        "notify": True,
-        "max_price": None,
-        "blocked_title_keywords": None,
-        "limit": None,
-        "enabled": True,
-    },
-    {
-        "task_name": "Mercari dry run | Contax T3",
-        "source": "mercari",
-        "keyword": "Contax T3",
-        "interval": 10,
-        "category_key": "all",
-        "category_id": None,
-        "mode": "dry-run",
-        "dry_run": True,
-        "notify": False,
-        "max_price": None,
-        "blocked_title_keywords": None,
-        "limit": 15,
-        "enabled": ENABLE_MERCARI_DRY_RUN_TASK,
-    },
-    {
-        "task_name": "Mercari silent | Contax T3",
-        "source": "mercari",
-        "keyword": "Contax T3",
-        "interval": 10,
-        "category_key": "all",
-        "category_id": None,
-        "mode": "silent",
-        "dry_run": False,
-        "notify": False,
-        "max_price": None,
-        "blocked_title_keywords": None,
-        "limit": 15,
-        "enabled": ENABLE_MERCARI_SILENT_TASK,
-    },
-    {
-        "task_name": "Mercari notify | Contax T3",
-        "source": "mercari",
-        "keyword": "Contax T3",
-        "interval": 10,
-        "category_key": "all",
-        "category_id": None,
-        "mode": "notify",
-        "dry_run": False,
-        "notify": True,
-        "max_price": None,
-        "blocked_title_keywords": None,
-        "limit": MERCARI_NOTIFY_RESULT_LIMIT,
-        "enabled": ENABLE_MERCARI_NOTIFY_TASK,
-    },
-]
+# Watch tasks live in JSON so future UI can edit them safely.
+WATCH_TASKS = apply_mercari_env_overrides(
+    tasks=load_watch_tasks(WATCH_TASKS_FILE),
+    enable_dry_run=ENABLE_MERCARI_DRY_RUN_TASK,
+    enable_silent=ENABLE_MERCARI_SILENT_TASK,
+    enable_notify=ENABLE_MERCARI_NOTIFY_TASK,
+    notify_result_limit=MERCARI_NOTIFY_RESULT_LIMIT,
+)
 
 
 # Title keywords to ignore.

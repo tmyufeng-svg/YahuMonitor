@@ -7,6 +7,7 @@
 - Marked the current milestone as `0.9.0-beta`.
 - Updated the current milestone to `0.9.1-beta`.
 - Updated the current milestone to `0.9.2-beta`.
+- Updated the current milestone to `0.9.3-beta`.
 
 ### Research
 
@@ -56,6 +57,14 @@
 - Added explicit watch task `mode` support for UI-ready task editing.
 - Added `task_schema.py` for task field and mode definitions.
 - Added `export_task_schema.py` for JSON schema export.
+- Added `watch_tasks.json` as the editable watch task configuration file.
+- Added `task_config.py` to load watch tasks and apply local Mercari mode overrides.
+
+### Changed
+
+- Moved watch task definitions out of `config.py` and into `watch_tasks.json`.
+- `config.py` now keeps runtime settings while task editing happens in JSON.
+- Release and smoke checks now include the external task configuration files.
 
 ### Fixed
 
