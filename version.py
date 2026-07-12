@@ -1,6 +1,6 @@
 APP_NAME = "Yahoo Monitor"
-VERSION = "0.9.9-beta"
-MILESTONE = "V0.9 V1 release readiness beta"
+VERSION = "1.0.0-beta"
+MILESTONE = "V1 stable search monitor beta"
 
 
 def version_label():

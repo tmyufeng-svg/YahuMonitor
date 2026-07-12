@@ -1,10 +1,10 @@
 # Yahoo Monitor Roadmap
 
-## Current Version: 0.9.9-beta
+## Current Version: 1.0.0-beta
 
-This version is the V1.0 release readiness beta.
+This version is the stable search-based monitor beta.
 
-Before calling the project V1.0, run:
+Before treating this beta as stable, run:
 
 ```powershell
 python release_check.py
@@ -12,7 +12,7 @@ python release_check.py
 
 Then complete the manual checks printed by the script.
 
-## Current Focus: Make Tasks Run Reliably
+## Current Focus: Stabilize V1.0 Beta
 
 The immediate goal is to make configured watch tasks run safely and repeatably:
 

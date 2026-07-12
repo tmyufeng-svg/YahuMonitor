@@ -1,5 +1,17 @@
 # Changelog
 
+## v1.0.0-beta
+
+### Added
+
+- Marked the project as a stable search-based monitor beta.
+- Includes Yahoo search monitoring, optional Mercari public-search tasks, SQLite deduplication, Telegram notifications, task JSON configuration, local task editor, release checks, and a local dashboard.
+
+### Scope
+
+- V1.0 watches public search results and sends direct item links.
+- Earlier-than-search detection remains V2.x research.
+
 ## v0.9.x
 
 ### Version
