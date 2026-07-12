@@ -40,6 +40,8 @@
 - Added `categories.py` for named marketplace category aliases.
 - Added `category_key` support in watch tasks.
 - Added `list_categories.py` to inspect configured category aliases.
+- Added bounded main runs with `--once` and `--max-cycles`.
+- Added `--skip-startup-message` for faster local task testing.
 
 ### Fixed
 

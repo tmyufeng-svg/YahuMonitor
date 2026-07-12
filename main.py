@@ -1,3 +1,4 @@
+import argparse
 import logging
 import os
 import time
@@ -1122,8 +1123,8 @@ def validate_runtime_config():
         raise ValueError("DATABASE_NAME cannot be empty")
 
 
-def send_startup_check(notifier, task_count):
-    if not SEND_STARTUP_MESSAGE:
+def send_startup_check(notifier, task_count, skip_startup_message=False):
+    if skip_startup_message or not SEND_STARTUP_MESSAGE:
         logger.info("Telegram startup test skipped")
         return
 
@@ -1153,7 +1154,39 @@ def can_restart_browser(restart_count):
     return restart_count < MAX_BROWSER_RESTARTS_PER_SCAN
 
 
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Run Yahoo Monitor."
+    )
+    parser.add_argument(
+        "--once",
+        action="store_true",
+        help="Run one due task cycle and exit.",
+    )
+    parser.add_argument(
+        "--max-cycles",
+        type=int,
+        help="Exit after this many due task cycles.",
+    )
+    parser.add_argument(
+        "--skip-startup-message",
+        action="store_true",
+        help="Skip Telegram startup test message.",
+    )
+
+    args = parser.parse_args()
+
+    if args.once:
+        args.max_cycles = 1
+
+    if args.max_cycles is not None and args.max_cycles < 1:
+        raise ValueError("--max-cycles must be greater than 0")
+
+    return args
+
+
 def main():
+    args = parse_args()
     db = None
     browser_manager = None
     scan = 0
@@ -1196,6 +1229,7 @@ def main():
         send_startup_check(
             notifier=notifier,
             task_count=len(tasks),
+            skip_startup_message=args.skip_startup_message,
         )
 
         browser_manager = BrowserManager()
@@ -1206,6 +1240,7 @@ def main():
         logger.info(
             "Yahoo Monitor started | "
             f"Tasks={len(tasks)} | "
+            f"MaxCycles={args.max_cycles} | "
             f"BlockedTitleKeywords={len(BLOCKED_TITLE_KEYWORDS)} | "
             f"MaxPrice={MAX_PRICE} | "
             f"NotifyExistingOnStartup={NOTIFY_EXISTING_ON_STARTUP} | "
@@ -1285,6 +1320,16 @@ def main():
                     task_count=len(due_states),
                     cycle_stats=cycle_stats,
                 )
+
+                if (
+                    args.max_cycles is not None
+                    and scan >= args.max_cycles
+                ):
+                    logger.info(
+                        "Max cycle limit reached; "
+                        "shutting down monitor"
+                    )
+                    break
 
             except KeyboardInterrupt:
                 raise

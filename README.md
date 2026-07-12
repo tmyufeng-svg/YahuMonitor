@@ -74,6 +74,18 @@ python config_check.py
 python main.py
 ```
 
+Run one due task cycle and exit automatically:
+
+```powershell
+python main.py --once --skip-startup-message
+```
+
+Run three due task cycles and exit automatically:
+
+```powershell
+python main.py --max-cycles 3 --skip-startup-message
+```
+
 Stop with:
 
 ```text
@@ -94,6 +106,7 @@ Ctrl+C
 - `set_mercari_mode.py` - local Mercari mode switcher for `.env`
 - `categories.py` - marketplace category alias catalog
 - `list_categories.py` - category alias listing tool
+- `ROADMAP.md` - milestone plan from stable search monitor to earlier detection
 - `logger.py` - console and file logging
 
 ## Watch Tasks
@@ -289,7 +302,7 @@ The faster local workflow is:
 ```powershell
 python set_mercari_mode.py dry-run
 python config_check.py
-python main.py
+python main.py --once --skip-startup-message
 ```
 
 Then:
@@ -297,7 +310,7 @@ Then:
 ```powershell
 python set_mercari_mode.py silent
 python config_check.py
-python main.py
+python main.py --max-cycles 3 --skip-startup-message
 ```
 
 Use `notify` only after dry-run and silent mode both look correct.
