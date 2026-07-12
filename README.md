@@ -4,7 +4,7 @@ Yahoo Monitor is a Python monitor for Yahoo Flea Market search results.
 
 It scans configured keywords, stores seen items in SQLite, and sends new item notifications to Telegram.
 
-Current milestone: `v1.0.1-beta`
+Current milestone: `v1.1.0-beta`
 
 V1.0 is a stable search-based monitor. It watches public search results and sends direct item links. Earlier-than-search detection is future V2.x research.
 
@@ -209,7 +209,22 @@ python export_app_state.py --output app_state.json
 
 Open `dashboard.html` in a browser, then select `app_state.json` to view configured tasks.
 
-The dashboard can change enabled status, mode, interval, and limit in the browser. Use `Download watch_tasks.json` to save an updated task file, then replace the local `watch_tasks.json` after reviewing it.
+The dashboard can change source, keyword, enabled status, mode, interval, and limit in the browser. Use `下载 watch_tasks.json` to save an updated task file, then replace the local `watch_tasks.json` after reviewing it.
+
+Dashboard workflow:
+
+```powershell
+python export_app_state.py --output app_state.json
+```
+
+Then:
+
+1. Open `dashboard.html`.
+2. Select `app_state.json`.
+3. Edit source, keyword, enabled status, mode, interval, or limit.
+4. Click `下载 watch_tasks.json`.
+5. Replace the local `watch_tasks.json`.
+6. Run `python task_config_check.py`.
 
 List configured tasks:
 

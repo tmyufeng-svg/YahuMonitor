@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Yahoo Monitor Dashboard</title>
+  <title>Yahoo Monitor 控制面板</title>
   <style>
     :root {
       color-scheme: light;
@@ -163,7 +163,8 @@
     }
 
     select,
-    input[type="number"] {
+    input[type="number"],
+    input[type="text"] {
       width: 100%;
       min-height: 32px;
       border: 1px solid var(--line);
@@ -194,37 +195,37 @@
 </head>
 <body>
   <header>
-    <h1>Yahoo Monitor Dashboard</h1>
-    <div id="subtitle" class="muted">Load app_state.json to view monitor tasks.</div>
+    <h1>Yahoo Monitor 控制面板</h1>
+    <div id="subtitle" class="muted">选择 app_state.json 查看和编辑监控任务。</div>
   </header>
 
   <main>
     <section class="toolbar">
       <div>
-        <strong>App State</strong>
-        <div class="muted">Generate with: python export_app_state.py --output app_state.json</div>
+        <strong>任务配置预览</strong>
+        <div class="muted">先运行：python export_app_state.py --output app_state.json</div>
       </div>
       <div>
         <input id="stateFile" type="file" accept="application/json,.json">
-        <button id="downloadTasks" disabled>Download watch_tasks.json</button>
+        <button id="downloadTasks" disabled>下载 watch_tasks.json</button>
       </div>
     </section>
 
     <section class="summary" aria-label="Summary">
       <div class="metric">
-        <span>Total Tasks</span>
+        <span>任务总数</span>
         <strong id="totalTasks">-</strong>
       </div>
       <div class="metric">
-        <span>Enabled</span>
+        <span>已启用</span>
         <strong id="enabledTasks">-</strong>
       </div>
       <div class="metric">
-        <span>Disabled</span>
+        <span>已停用</span>
         <strong id="disabledTasks">-</strong>
       </div>
       <div class="metric">
-        <span>Version</span>
+        <span>版本</span>
         <strong id="version">-</strong>
       </div>
     </section>
@@ -233,19 +234,19 @@
       <table>
         <thead>
           <tr>
-            <th style="width: 20%">Task</th>
-            <th style="width: 9%">Status</th>
-            <th style="width: 10%">Source</th>
-            <th style="width: 17%">Keyword</th>
-            <th style="width: 12%">Mode</th>
-            <th style="width: 10%">Interval</th>
-            <th style="width: 10%">Category</th>
-            <th style="width: 12%">Limit</th>
+            <th style="width: 18%">任务名</th>
+            <th style="width: 9%">状态</th>
+            <th style="width: 11%">平台</th>
+            <th style="width: 19%">关键词</th>
+            <th style="width: 12%">模式</th>
+            <th style="width: 10%">间隔</th>
+            <th style="width: 9%">分类</th>
+            <th style="width: 12%">数量</th>
           </tr>
         </thead>
         <tbody id="taskRows">
           <tr>
-            <td colspan="8" class="muted">No app state loaded.</td>
+            <td colspan="8" class="muted">尚未加载 app_state.json。</td>
           </tr>
         </tbody>
       </table>
@@ -262,6 +263,21 @@
       return value === null || value === undefined || value === "" ? "-" : String(value);
     }
 
+    function escapeHtml(value) {
+      return text(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;");
+    }
+
+    function escapeAttr(value) {
+      return String(value ?? "")
+        .replaceAll("&", "&amp;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;");
+    }
+
     function setText(id, value) {
       document.getElementById(id).textContent = text(value);
     }
@@ -275,10 +291,13 @@
       const mode = task.mode || "notify";
       const flags = modeMap[mode] || modeMap.notify;
 
+      const source = task.source || "yahoo";
+      const keyword = task.keyword || "";
+
       return {
-        task_name: task.task_name || null,
-        source: task.source || "yahoo",
-        keyword: task.keyword || "",
+        task_name: task.task_name || `${source} | ${keyword}`,
+        source,
+        keyword,
         interval: Number(task.interval) || 2,
         category_key: task.category_key || "all",
         category_id: task.category_id ?? null,
@@ -321,6 +340,12 @@
 
       if (field === "enabled") {
         task.enabled = value;
+      } else if (field === "source") {
+        task.source = value;
+        task.task_name = `${value} | ${task.keyword || ""}`;
+      } else if (field === "keyword") {
+        task.keyword = value.trim();
+        task.task_name = `${task.source || "yahoo"} | ${task.keyword}`;
       } else if (field === "interval") {
         task.interval = Number(value) || 2;
       } else if (field === "limit") {
@@ -332,6 +357,15 @@
 
       currentState.tasks[index] = normalizeTask(task);
       updateSummary();
+    }
+
+    function sourceOptions(selectedSource) {
+      const sources = currentState?.schema?.sources || ["yahoo", "mercari"];
+
+      return sources.map((source) => {
+        const selected = source === selectedSource ? "selected" : "";
+        return `<option value="${source}" ${selected}>${source}</option>`;
+      }).join("");
     }
 
     function taskModeOptions(selectedMode) {
@@ -363,7 +397,7 @@
       rows.innerHTML = "";
 
       if (!tasks.length) {
-        rows.innerHTML = '<tr><td colspan="8" class="muted">No tasks configured.</td></tr>';
+        rows.innerHTML = '<tr><td colspan="8" class="muted">尚未配置任务。</td></tr>';
         return;
       }
 
@@ -371,15 +405,21 @@
         const enabled = task.enabled !== false;
         const row = document.createElement("tr");
         row.innerHTML = `
-          <td>${text(task.task_name)}</td>
+          <td>${escapeHtml(task.task_name)}</td>
           <td>
             <select data-index="${index}" data-field="enabled">
-              <option value="true" ${enabled ? "selected" : ""}>Enabled</option>
-              <option value="false" ${enabled ? "" : "selected"}>Disabled</option>
+              <option value="true" ${enabled ? "selected" : ""}>启用</option>
+              <option value="false" ${enabled ? "" : "selected"}>停用</option>
             </select>
           </td>
-          <td><span class="badge">${text(task.source)}</span></td>
-          <td>${text(task.keyword)}</td>
+          <td>
+            <select data-index="${index}" data-field="source">
+              ${sourceOptions(task.source)}
+            </select>
+          </td>
+          <td>
+            <input data-index="${index}" data-field="keyword" type="text" value="${escapeAttr(task.keyword)}">
+          </td>
           <td>
             <select data-index="${index}" data-field="mode">
               ${taskModeOptions(task.mode)}
@@ -390,7 +430,7 @@
           </td>
           <td>${text(task.category_key)}</td>
           <td>
-            <input data-index="${index}" data-field="limit" type="number" min="1" step="1" value="${task.limit ?? ""}" placeholder="-">
+            <input data-index="${index}" data-field="limit" type="number" min="1" step="1" value="${task.limit ?? ""}" placeholder="不限">
           </td>
         `;
         rows.appendChild(row);
@@ -441,7 +481,7 @@
         const state = JSON.parse(await file.text());
         renderState(state);
       } catch (error) {
-        rows.innerHTML = `<tr><td colspan="8">Failed to load JSON: ${error.message}</td></tr>`;
+        rows.innerHTML = `<tr><td colspan="8">JSON 加载失败：${error.message}</td></tr>`;
       }
     });
   </script>

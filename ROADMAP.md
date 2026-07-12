@@ -1,8 +1,8 @@
 # Yahoo Monitor Roadmap
 
-## Current Version: 1.0.1-beta
+## Current Version: 1.1.0-beta
 
-This version adds a standalone Telegram delivery test.
+This version improves dashboard-based task editing.
 
 Before treating this beta as stable, run:
 
@@ -28,7 +28,7 @@ The immediate goal is to make configured watch tasks run safely and repeatably:
 - Shared watch task validation for the editor, config checks, and future front-end work
 - UI-ready JSON export for tasks, schema, categories, modes, and version state
 - Read-only local dashboard for viewing configured tasks from `app_state.json`
-- Dashboard editing for enabled status, mode, interval, and limit with JSON download
+- Dashboard editing for source, keyword, enabled status, mode, interval, and limit with JSON download
 - V1.0 release checklist and stronger release readiness checks
 
 Useful test commands:
@@ -52,6 +52,7 @@ V1.0 should be a stable search-result monitor:
 - Repeatable test and probe commands
 - Basic front-end configuration UI
 - JSON-based task configuration that the UI can read and write safely
+- Dashboard editing for marketplace source and keyword
 
 This version watches public search pages. It can be useful, but it should not be expected to beat paid monitors that detect items before search indexes update.
 

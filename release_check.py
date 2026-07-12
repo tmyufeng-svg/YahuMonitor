@@ -57,9 +57,11 @@ REQUIRED_ENV_EXAMPLE_KEYS = [
 
 
 REQUIRED_DASHBOARD_TEXT = [
-    "Download watch_tasks.json",
+    "下载 watch_tasks.json",
     "app_state.json",
     "data-field=\"enabled\"",
+    "data-field=\"source\"",
+    "data-field=\"keyword\"",
     "data-field=\"mode\"",
     "data-field=\"interval\"",
     "data-field=\"limit\"",

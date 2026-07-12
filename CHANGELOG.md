@@ -1,5 +1,13 @@
 # Changelog
 
+## v1.1.0-beta
+
+### Changed
+
+- Local dashboard UI is now Chinese.
+- Dashboard can edit marketplace source and keyword before exporting `watch_tasks.json`.
+- Dashboard export keeps task mode flags synchronized with the selected mode.
+
 ## v1.0.1-beta
 
 ### Added

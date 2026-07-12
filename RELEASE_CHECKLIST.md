@@ -60,8 +60,9 @@ Confirm:
 
 - Task list loads from `app_state.json`.
 - Enabled status is visible.
+- Source and keyword can be edited.
 - Mode, interval, and limit can be changed.
-- `Download watch_tasks.json` exports a valid JSON file.
+- `下载 watch_tasks.json` exports a valid JSON file.
 - The exported file passes `python task_config_check.py` after replacement.
 
 ## Security Checks
