@@ -1,8 +1,8 @@
 # Yahoo Monitor Roadmap
 
-## Current Version: 0.9.1-beta
+## Current Version: 0.9.2-beta
 
-This version is the controlled Mercari notification beta.
+This version is the task configuration schema beta.
 
 Before calling the project V1.0, run:
 
@@ -22,6 +22,7 @@ The immediate goal is to make configured watch tasks run safely and repeatably:
 - Mercari notification mode only after dry-run and silent mode look correct
 - Mercari notification mode requires explicit local confirmation
 - Task-level interval, limit, category, price, and title filters
+- Stable task `mode` field for future UI editing
 
 Useful test commands:
 

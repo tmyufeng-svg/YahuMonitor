@@ -6,6 +6,7 @@
 
 - Marked the current milestone as `0.9.0-beta`.
 - Updated the current milestone to `0.9.1-beta`.
+- Updated the current milestone to `0.9.2-beta`.
 
 ### Research
 
@@ -52,6 +53,9 @@
 - Added `smoke_check.py` for local syntax smoke checks.
 - Added `CONFIRM_MERCARI_NOTIFY` guard for Mercari notification mode.
 - Added `MERCARI_NOTIFY_RESULT_LIMIT` for smaller notification trials.
+- Added explicit watch task `mode` support for UI-ready task editing.
+- Added `task_schema.py` for task field and mode definitions.
+- Added `export_task_schema.py` for JSON schema export.
 
 ### Fixed
 

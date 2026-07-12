@@ -33,6 +33,12 @@ from database import Database
 from logger import logger
 from mercari import MercariScraper
 from notifier import TelegramNotifier
+from task_schema import (
+    infer_task_mode,
+    mode_dry_run,
+    mode_notify,
+    valid_task_modes,
+)
 from version import VERSION, version_label
 from yahoo import YahooScraper
 
@@ -790,12 +796,16 @@ def task_interval(task):
     return task.get("interval", SCAN_INTERVAL)
 
 
+def task_mode(task):
+    return infer_task_mode(task)
+
+
 def task_dry_run(task):
-    return task.get("dry_run", False)
+    return mode_dry_run(task_mode(task))
 
 
 def task_notify(task):
-    return task.get("notify", True)
+    return mode_notify(task_mode(task))
 
 
 def task_max_price(task):
@@ -834,6 +844,7 @@ def log_watch_tasks(tasks):
             f"Keyword={task_keyword(task).strip()} | "
             f"CategoryKey={task_category_key(task)} | "
             f"CategoryId={task_category_id(task)} | "
+            f"Mode={task_mode(task)} | "
             f"Interval={task_interval(task)}s | "
             f"DryRun={task_dry_run(task)} | "
             f"Notify={task_notify(task)} | "
@@ -940,17 +951,33 @@ def validate_watch_tasks():
         )
 
         dry_run = task_dry_run(task)
+        mode = task_mode(task)
 
-        if not isinstance(dry_run, bool):
+        if mode not in valid_task_modes():
+            raise ValueError(
+                f"WATCH_TASKS[{index}].mode is invalid: {mode}. "
+                f"Available modes: {', '.join(valid_task_modes())}"
+            )
+
+        raw_dry_run = task.get("dry_run", dry_run)
+
+        if not isinstance(raw_dry_run, bool):
             raise ValueError(
                 f"WATCH_TASKS[{index}].dry_run must be True or False"
             )
 
         notify = task_notify(task)
+        raw_notify = task.get("notify", notify)
 
-        if not isinstance(notify, bool):
+        if not isinstance(raw_notify, bool):
             raise ValueError(
                 f"WATCH_TASKS[{index}].notify must be True or False"
+            )
+
+        if raw_dry_run != dry_run or raw_notify != notify:
+            raise ValueError(
+                f"WATCH_TASKS[{index}] mode conflicts with "
+                "dry_run/notify values"
             )
 
         if (

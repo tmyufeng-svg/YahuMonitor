@@ -7,6 +7,8 @@ FILES_TO_COMPILE = [
     "config.example.py",
     "config_check.py",
     "release_check.py",
+    "task_schema.py",
+    "export_task_schema.py",
     "categories.py",
     "list_categories.py",
     "set_mercari_mode.py",

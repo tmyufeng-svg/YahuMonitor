@@ -4,7 +4,7 @@ Yahoo Monitor is a Python monitor for Yahoo Flea Market search results.
 
 It scans configured keywords, stores seen items in SQLite, and sends new item notifications to Telegram.
 
-Current milestone: `v0.9.1-beta`
+Current milestone: `v0.9.2-beta`
 
 ## Features
 
@@ -49,7 +49,9 @@ WATCH_TASKS = [
         "source": "yahoo",
         "keyword": "Contax T3",
         "interval": 2,
+        "category_key": "all",
         "category_id": None,
+        "mode": "notify",
         "dry_run": False,
         "notify": True,
         "max_price": None,
@@ -119,6 +121,8 @@ Ctrl+C
 - `config_check.py` - local configuration validator
 - `release_check.py` - local V1.0 readiness checker
 - `smoke_check.py` - local syntax smoke check runner
+- `task_schema.py` - watch task field and mode definitions
+- `export_task_schema.py` - JSON schema export for future UI work
 - `set_mercari_mode.py` - local Mercari mode switcher for `.env`
 - `categories.py` - marketplace category alias catalog
 - `list_categories.py` - category alias listing tool
@@ -136,7 +140,9 @@ WATCH_TASKS = [
         "source": "yahoo",
         "keyword": "Contax T3",
         "interval": 2,
+        "category_key": "all",
         "category_id": None,
+        "mode": "notify",
         "dry_run": False,
         "notify": True,
         "max_price": None,
@@ -148,6 +154,20 @@ WATCH_TASKS = [
 ```
 
 `task_name` is a readable label used in startup, scan, and error logs. If it is omitted, the monitor uses `source:keyword`.
+
+`mode` is the preferred task behavior field for future UI work:
+
+- `dry-run` parses items without database writes or notifications.
+- `silent` saves new items without notifications.
+- `notify` saves and sends notifications.
+
+`dry_run` and `notify` are still present for compatibility, but they must match `mode`.
+
+Export the task schema for UI integration:
+
+```powershell
+python export_task_schema.py
+```
 
 The current main loop supports Yahoo tasks and can dispatch Mercari tasks when explicitly enabled. Mercari remains disabled by default while public search parsing is tested.
 
