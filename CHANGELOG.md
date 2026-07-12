@@ -23,6 +23,8 @@
 - Added task-level notification disable mode that stores new items as `silent`.
 - Added task names and startup task list logging.
 - Changed `WATCH_TASKS` from keyword-generated config to explicit task config.
+- Added `config.example.py` as a reference configuration.
+- Added `config_check.py` for local configuration validation without browser startup.
 
 ### Fixed
 

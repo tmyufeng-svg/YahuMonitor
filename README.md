@@ -54,6 +54,14 @@ WATCH_TASKS = [
 ]
 ```
 
+`config.example.py` contains a complete reference configuration.
+
+Validate local configuration without opening a browser or sending Telegram messages:
+
+```powershell
+python config_check.py
+```
+
 ## Run
 
 ```powershell
@@ -75,6 +83,8 @@ Ctrl+C
 - `notifier.py` - Telegram notification sender
 - `browser_manager.py` - Playwright browser lifecycle
 - `config.py` - runtime configuration
+- `config.example.py` - reference runtime configuration
+- `config_check.py` - local configuration validator
 - `logger.py` - console and file logging
 
 ## Watch Tasks
