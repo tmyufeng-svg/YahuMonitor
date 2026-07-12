@@ -33,6 +33,9 @@ Create `.env` from `.env.example`:
 ```text
 TOKEN=YOUR_TELEGRAM_BOT_TOKEN
 CHAT_ID=YOUR_TELEGRAM_CHAT_ID
+ENABLE_MERCARI_DRY_RUN_TASK=false
+ENABLE_MERCARI_SILENT_TASK=false
+ENABLE_MERCARI_NOTIFY_TASK=false
 ```
 
 Edit `config.py` for watch tasks and runtime settings:
@@ -57,7 +60,7 @@ WATCH_TASKS = [
 
 `config.example.py` contains a complete reference configuration.
 
-The default `config.py` also includes disabled Mercari dry-run, silent, and notification templates. Keep them disabled until probe output looks correct.
+The default `config.py` also includes Mercari dry-run, silent, and notification templates. They are controlled by local `.env` switches and stay disabled by default.
 
 Validate local configuration without opening a browser or sending Telegram messages:
 
@@ -115,6 +118,16 @@ WATCH_TASKS = [
 `task_name` is a readable label used in startup, scan, and error logs. If it is omitted, the monitor uses `source:keyword`.
 
 The current main loop supports Yahoo tasks and can dispatch Mercari tasks when explicitly enabled. Mercari remains disabled by default while public search parsing is tested.
+
+Mercari task activation is controlled through `.env` so local trials do not require committing config changes:
+
+```text
+ENABLE_MERCARI_DRY_RUN_TASK=true
+ENABLE_MERCARI_SILENT_TASK=false
+ENABLE_MERCARI_NOTIFY_TASK=false
+```
+
+Enable only one Mercari mode at a time while testing. Use dry-run first, then silent, then notify.
 
 Set `dry_run` to `True` for a task when you want to test parsing inside the main loop without sending Telegram notifications or writing new items to the database.
 
@@ -236,7 +249,7 @@ Live notification mode:
 }
 ```
 
-Recommended order: `mercari_probe.py`, then `task_probe.py --mode dry-run`, then `task_probe.py --mode silent`, then notification mode in `main.py`.
+Recommended order: `mercari_probe.py`, then `task_probe.py --mode dry-run`, then `task_probe.py --mode silent`, then run `main.py` with `ENABLE_MERCARI_DRY_RUN_TASK=true`, then with `ENABLE_MERCARI_SILENT_TASK=true`, and only then notification mode.
 
 ## Safety Notes
 

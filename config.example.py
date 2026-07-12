@@ -6,6 +6,20 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
+def env_bool(name, default=False):
+    value = os.getenv(name)
+
+    if value is None:
+        return default
+
+    return value.strip().casefold() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
+
+
 # Telegram
 TOKEN = os.getenv("TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
@@ -34,6 +48,22 @@ USE_SEARCH_RESULT_ITEM_DETAILS = True
 FORCE_EXIT_AFTER_CTRL_C = True
 DETAILED_SCAN_LOGS = False
 DRY_RUN_SAMPLE_LIMIT = 5
+
+
+# Local Mercari activation switches.
+# Keep notify disabled until dry-run and silent modes look correct.
+ENABLE_MERCARI_DRY_RUN_TASK = env_bool(
+    "ENABLE_MERCARI_DRY_RUN_TASK",
+    False,
+)
+ENABLE_MERCARI_SILENT_TASK = env_bool(
+    "ENABLE_MERCARI_SILENT_TASK",
+    False,
+)
+ENABLE_MERCARI_NOTIFY_TASK = env_bool(
+    "ENABLE_MERCARI_NOTIFY_TASK",
+    False,
+)
 
 
 # Watch tasks are the main configuration format.
@@ -76,7 +106,7 @@ WATCH_TASKS = [
         "max_price": None,
         "blocked_title_keywords": None,
         "limit": 15,
-        "enabled": False,
+        "enabled": ENABLE_MERCARI_DRY_RUN_TASK,
     },
     {
         "task_name": "Mercari silent | Contax T3",
@@ -89,7 +119,7 @@ WATCH_TASKS = [
         "max_price": None,
         "blocked_title_keywords": None,
         "limit": 15,
-        "enabled": False,
+        "enabled": ENABLE_MERCARI_SILENT_TASK,
     },
     {
         "task_name": "Mercari notify | Contax T3",
@@ -102,7 +132,7 @@ WATCH_TASKS = [
         "max_price": None,
         "blocked_title_keywords": None,
         "limit": 15,
-        "enabled": False,
+        "enabled": ENABLE_MERCARI_NOTIFY_TASK,
     },
 ]
 
