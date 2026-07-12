@@ -24,6 +24,7 @@ V1_MANUAL_CHECKS = [
     "Yahoo runs with main.py --max-cycles 3",
     "Mercari dry-run runs with main.py --once",
     "Mercari silent runs with main.py --max-cycles 3",
+    "Mercari notify mode is tested with CONFIRM_MERCARI_NOTIFY=true",
     "Telegram notify mode is tested with a controlled item",
     "No GitHub secret scanning alerts are open",
     "README setup flow is current",

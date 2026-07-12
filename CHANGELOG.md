@@ -5,6 +5,7 @@
 ### Version
 
 - Marked the current milestone as `0.9.0-beta`.
+- Updated the current milestone to `0.9.1-beta`.
 
 ### Research
 
@@ -49,6 +50,8 @@
 - Added `version.py` and `main.py --version`.
 - Added `release_check.py` for local V1.0 readiness checks.
 - Added `smoke_check.py` for local syntax smoke checks.
+- Added `CONFIRM_MERCARI_NOTIFY` guard for Mercari notification mode.
+- Added `MERCARI_NOTIFY_RESULT_LIMIT` for smaller notification trials.
 
 ### Fixed
 

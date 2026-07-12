@@ -8,6 +8,7 @@ MERCARI_KEYS = {
     "silent": "ENABLE_MERCARI_SILENT_TASK",
     "notify": "ENABLE_MERCARI_NOTIFY_TASK",
 }
+CONFIRM_KEY = "CONFIRM_MERCARI_NOTIFY"
 
 
 def desired_values(mode):
@@ -36,6 +37,9 @@ def update_env(mode):
         {key: "false" for key in MERCARI_KEYS.values()}
         if mode == "off"
         else desired_values(mode)
+    )
+    values[CONFIRM_KEY] = (
+        "true" if mode == "notify" else "false"
     )
     lines = read_env_lines()
     updated_keys = set()
@@ -71,7 +75,10 @@ def update_env(mode):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Switch local Mercari task mode in .env."
+        description=(
+            "Switch local Mercari task mode in .env. "
+            "Notify mode also sets CONFIRM_MERCARI_NOTIFY=true."
+        )
     )
     parser.add_argument(
         "mode",

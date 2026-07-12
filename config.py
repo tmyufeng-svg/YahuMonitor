@@ -20,6 +20,15 @@ def env_bool(name, default=False):
     }
 
 
+def env_int(name, default):
+    value = os.getenv(name)
+
+    if value is None:
+        return default
+
+    return int(value.strip())
+
+
 # Telegram
 TOKEN = os.getenv("TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
@@ -63,6 +72,14 @@ ENABLE_MERCARI_SILENT_TASK = env_bool(
 ENABLE_MERCARI_NOTIFY_TASK = env_bool(
     "ENABLE_MERCARI_NOTIFY_TASK",
     False,
+)
+CONFIRM_MERCARI_NOTIFY = env_bool(
+    "CONFIRM_MERCARI_NOTIFY",
+    False,
+)
+MERCARI_NOTIFY_RESULT_LIMIT = env_int(
+    "MERCARI_NOTIFY_RESULT_LIMIT",
+    5,
 )
 
 
@@ -137,7 +154,7 @@ WATCH_TASKS = [
         "notify": True,
         "max_price": None,
         "blocked_title_keywords": None,
-        "limit": 15,
+        "limit": MERCARI_NOTIFY_RESULT_LIMIT,
         "enabled": ENABLE_MERCARI_NOTIFY_TASK,
     },
 ]

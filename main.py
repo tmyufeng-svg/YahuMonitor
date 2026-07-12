@@ -27,6 +27,7 @@ from config import (
     FORCE_EXIT_AFTER_CTRL_C,
     DETAILED_SCAN_LOGS,
     DRY_RUN_SAMPLE_LIMIT,
+    CONFIRM_MERCARI_NOTIFY,
 )
 from database import Database
 from logger import logger
@@ -952,6 +953,17 @@ def validate_watch_tasks():
                 f"WATCH_TASKS[{index}].notify must be True or False"
             )
 
+        if (
+            source == MERCARI_SOURCE
+            and notify
+            and not dry_run
+            and not CONFIRM_MERCARI_NOTIFY
+        ):
+            raise ValueError(
+                "Mercari notify mode requires "
+                "CONFIRM_MERCARI_NOTIFY=true in .env"
+            )
+
         validate_optional_positive_integer(
             f"WATCH_TASKS[{index}].max_price",
             task_max_price(task),
@@ -1100,6 +1112,7 @@ def validate_runtime_config():
     )
     validate_boolean("FORCE_EXIT_AFTER_CTRL_C", FORCE_EXIT_AFTER_CTRL_C)
     validate_boolean("DETAILED_SCAN_LOGS", DETAILED_SCAN_LOGS)
+    validate_boolean("CONFIRM_MERCARI_NOTIFY", CONFIRM_MERCARI_NOTIFY)
     validate_non_negative_integer(
         "DRY_RUN_SAMPLE_LIMIT",
         DRY_RUN_SAMPLE_LIMIT,

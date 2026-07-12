@@ -4,7 +4,7 @@ Yahoo Monitor is a Python monitor for Yahoo Flea Market search results.
 
 It scans configured keywords, stores seen items in SQLite, and sends new item notifications to Telegram.
 
-Current milestone: `v0.9.0-beta`
+Current milestone: `v0.9.1-beta`
 
 ## Features
 
@@ -36,6 +36,8 @@ CHAT_ID=YOUR_TELEGRAM_CHAT_ID
 ENABLE_MERCARI_DRY_RUN_TASK=false
 ENABLE_MERCARI_SILENT_TASK=false
 ENABLE_MERCARI_NOTIFY_TASK=false
+CONFIRM_MERCARI_NOTIFY=false
+MERCARI_NOTIFY_RESULT_LIMIT=5
 ```
 
 Edit `config.py` for watch tasks and runtime settings:
@@ -168,7 +170,16 @@ python set_mercari_mode.py silent
 python set_mercari_mode.py notify
 ```
 
-The script only updates the three `ENABLE_MERCARI_*` keys in `.env`.
+The script updates the Mercari mode keys and the notify confirmation key in `.env`.
+
+Mercari notification mode has an additional guard. It only starts when:
+
+```text
+ENABLE_MERCARI_NOTIFY_TASK=true
+CONFIRM_MERCARI_NOTIFY=true
+```
+
+`python set_mercari_mode.py notify` sets both values for local testing. `MERCARI_NOTIFY_RESULT_LIMIT` keeps the initial notify trial small.
 
 Set `dry_run` to `True` for a task when you want to test parsing inside the main loop without sending Telegram notifications or writing new items to the database.
 
@@ -328,6 +339,20 @@ python main.py --max-cycles 3 --skip-startup-message
 ```
 
 Use `notify` only after dry-run and silent mode both look correct.
+
+Controlled notify trial:
+
+```powershell
+python set_mercari_mode.py notify
+python config_check.py
+python main.py --once --skip-startup-message
+```
+
+Turn Mercari off after testing:
+
+```powershell
+python set_mercari_mode.py off
+```
 
 ## Safety Notes
 
