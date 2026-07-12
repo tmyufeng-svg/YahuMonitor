@@ -38,21 +38,21 @@ SUPPORTED_SOURCES = {
 }
 
 
-def title_has_blocked_keyword(title):
+def title_has_blocked_keyword(title, blocked_keywords):
     normalized_title = title.casefold()
 
-    for blocked_keyword in BLOCKED_TITLE_KEYWORDS:
+    for blocked_keyword in blocked_keywords:
         if blocked_keyword.casefold() in normalized_title:
             return blocked_keyword
 
     return None
 
 
-def item_exceeds_max_price(item):
-    if MAX_PRICE is None:
+def item_exceeds_max_price(item, max_price):
+    if max_price is None:
         return False
 
-    return item.price > MAX_PRICE
+    return item.price > max_price
 
 
 def current_detected_at():
@@ -67,8 +67,15 @@ def process_item(
     keyword,
     listing_item=None,
     source=YAHOO_SOURCE,
+    max_price=MAX_PRICE,
+    blocked_title_keywords=None,
 ):
     detail_fetched = listing_item is None
+    effective_blocked_title_keywords = (
+        BLOCKED_TITLE_KEYWORDS
+        if blocked_title_keywords is None
+        else blocked_title_keywords
+    )
 
     try:
         item_source = "detail_page" if detail_fetched else "search_result"
@@ -87,7 +94,10 @@ def process_item(
         else:
             item = listing_item
 
-        blocked_keyword = title_has_blocked_keyword(item.title)
+        blocked_keyword = title_has_blocked_keyword(
+            title=item.title,
+            blocked_keywords=effective_blocked_title_keywords,
+        )
 
         if blocked_keyword is not None:
             db.save(
@@ -111,13 +121,13 @@ def process_item(
                 "detail_fetched": detail_fetched,
             }
 
-        if item_exceeds_max_price(item):
+        if item_exceeds_max_price(item, max_price):
             db.save(
                 item=item,
                 keyword=keyword,
                 source=source,
                 status="ignored",
-                ignore_reason=f"price>{MAX_PRICE}",
+                ignore_reason=f"price>{max_price}",
             )
             logger.info(
                 f"[{keyword}] Ignored {item.id} | "
@@ -125,7 +135,7 @@ def process_item(
                 f"Source={item_source} | "
                 f"DetectedAt={detected_at} | "
                 f"Price={item.price:,} | "
-                f"MaxPrice={MAX_PRICE:,} | "
+                f"MaxPrice={max_price:,} | "
                 f"Title={item.title}"
             )
 
@@ -254,6 +264,8 @@ def scan_once(
     scan,
     source=YAHOO_SOURCE,
     dry_run=False,
+    max_price=MAX_PRICE,
+    blocked_title_keywords=None,
 ):
     start = time.perf_counter()
 
@@ -354,6 +366,8 @@ def scan_once(
                 keyword=keyword,
                 listing_item=listing_item,
                 source=source,
+                max_price=max_price,
+                blocked_title_keywords=blocked_title_keywords,
             )
 
             if result["detail_fetched"]:
@@ -670,6 +684,19 @@ def task_dry_run(task):
     return task.get("dry_run", False)
 
 
+def task_max_price(task):
+    return task.get("max_price", MAX_PRICE)
+
+
+def task_blocked_title_keywords(task):
+    task_keywords = task.get("blocked_title_keywords", None)
+
+    if task_keywords is None:
+        return BLOCKED_TITLE_KEYWORDS
+
+    return task_keywords
+
+
 def active_watch_tasks():
     return [
         task
@@ -733,6 +760,32 @@ def validate_watch_tasks():
         if not isinstance(dry_run, bool):
             raise ValueError(
                 f"WATCH_TASKS[{index}].dry_run must be True or False"
+            )
+
+        validate_optional_positive_integer(
+            f"WATCH_TASKS[{index}].max_price",
+            task_max_price(task),
+        )
+
+        blocked_keywords = task_blocked_title_keywords(task)
+
+        if not isinstance(blocked_keywords, list):
+            raise ValueError(
+                f"WATCH_TASKS[{index}].blocked_title_keywords "
+                "must be a list or None"
+            )
+
+        invalid_blocked_keywords = [
+            keyword
+            for keyword in blocked_keywords
+            if not isinstance(keyword, str)
+            or not keyword.strip()
+        ]
+
+        if invalid_blocked_keywords:
+            raise ValueError(
+                f"WATCH_TASKS[{index}].blocked_title_keywords "
+                "contains empty or invalid values"
             )
 
     if enabled_count == 0:
@@ -958,6 +1011,10 @@ def main():
                             scan=scan,
                             source=source,
                             dry_run=task_dry_run(task),
+                            max_price=task_max_price(task),
+                            blocked_title_keywords=task_blocked_title_keywords(
+                                task
+                            ),
                         )
 
                         add_scan_stats(cycle_stats, scan_stats)

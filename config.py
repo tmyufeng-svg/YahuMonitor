@@ -53,6 +53,8 @@ WATCH_TASKS = [
         "interval": SCAN_INTERVAL,
         "category_id": None,
         "dry_run": False,
+        "max_price": None,
+        "blocked_title_keywords": None,
         "enabled": True,
     }
     for keyword in KEYWORDS
@@ -63,6 +65,8 @@ WATCH_TASKS = [
         "interval": 10,
         "category_id": None,
         "dry_run": True,
+        "max_price": None,
+        "blocked_title_keywords": None,
         "enabled": False,
     },
 ]

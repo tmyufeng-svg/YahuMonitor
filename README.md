@@ -79,6 +79,8 @@ WATCH_TASKS = [
         "interval": 2,
         "category_id": None,
         "dry_run": False,
+        "max_price": None,
+        "blocked_title_keywords": None,
         "enabled": True,
     },
 ]
@@ -89,6 +91,8 @@ The current main loop supports Yahoo tasks and can dispatch Mercari tasks when e
 Set `dry_run` to `True` for a task when you want to test parsing inside the main loop without sending Telegram notifications or writing new items to the database.
 
 `DRY_RUN_SAMPLE_LIMIT` controls how many parsed dry-run items are printed to the log for each scan.
+
+Task-level `max_price` and `blocked_title_keywords` override the global filters when they are set. Use `None` to keep the global default.
 
 ## Mercari Probe
 
