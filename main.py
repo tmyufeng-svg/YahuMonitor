@@ -906,6 +906,40 @@ def validate_watch_tasks():
     if enabled_count == 0:
         raise ValueError("WATCH_TASKS has no enabled tasks")
 
+    enabled_mercari_keys = {}
+
+    for task in WATCH_TASKS:
+        if not task_is_enabled(task):
+            continue
+
+        source = task_source(task)
+
+        if source != MERCARI_SOURCE:
+            continue
+
+        key = (
+            source,
+            task_keyword(task).strip().casefold(),
+        )
+        enabled_mercari_keys.setdefault(key, []).append(task_name(task))
+
+    duplicate_mercari_tasks = {
+        key: names
+        for key, names in enabled_mercari_keys.items()
+        if len(names) > 1
+    }
+
+    if duplicate_mercari_tasks:
+        duplicate_names = []
+
+        for names in duplicate_mercari_tasks.values():
+            duplicate_names.extend(names)
+
+        raise ValueError(
+            "Only one Mercari mode can be enabled per keyword: "
+            + ", ".join(duplicate_names)
+        )
+
 
 def initialize_task_states(tasks):
     now = time.monotonic()

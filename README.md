@@ -91,6 +91,7 @@ Ctrl+C
 - `config.py` - runtime configuration
 - `config.example.py` - reference runtime configuration
 - `config_check.py` - local configuration validator
+- `set_mercari_mode.py` - local Mercari mode switcher for `.env`
 - `logger.py` - console and file logging
 
 ## Watch Tasks
@@ -128,6 +129,17 @@ ENABLE_MERCARI_NOTIFY_TASK=false
 ```
 
 Enable only one Mercari mode at a time while testing. Use dry-run first, then silent, then notify.
+
+You can switch local Mercari mode without manually editing `.env`:
+
+```powershell
+python set_mercari_mode.py off
+python set_mercari_mode.py dry-run
+python set_mercari_mode.py silent
+python set_mercari_mode.py notify
+```
+
+The script only updates the three `ENABLE_MERCARI_*` keys in `.env`.
 
 Set `dry_run` to `True` for a task when you want to test parsing inside the main loop without sending Telegram notifications or writing new items to the database.
 
@@ -250,6 +262,24 @@ Live notification mode:
 ```
 
 Recommended order: `mercari_probe.py`, then `task_probe.py --mode dry-run`, then `task_probe.py --mode silent`, then run `main.py` with `ENABLE_MERCARI_DRY_RUN_TASK=true`, then with `ENABLE_MERCARI_SILENT_TASK=true`, and only then notification mode.
+
+The faster local workflow is:
+
+```powershell
+python set_mercari_mode.py dry-run
+python config_check.py
+python main.py
+```
+
+Then:
+
+```powershell
+python set_mercari_mode.py silent
+python config_check.py
+python main.py
+```
+
+Use `notify` only after dry-run and silent mode both look correct.
 
 ## Safety Notes
 

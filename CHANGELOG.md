@@ -33,6 +33,8 @@
 - Added disabled Mercari silent and notification templates to the runtime config.
 - Added source and keyword selectors to `task_probe.py`.
 - Added `.env` switches for Mercari dry-run, silent, and notification tasks.
+- Added `set_mercari_mode.py` to switch Mercari task modes without manually editing `.env`.
+- Added validation to prevent multiple Mercari modes for the same keyword from running at once.
 
 ### Fixed
 
