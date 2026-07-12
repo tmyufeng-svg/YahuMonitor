@@ -14,6 +14,12 @@
 - Added `WATCH_TASKS` as the future configuration shape for source, keyword, interval, and category-aware monitoring.
 - Added lightweight per-task interval scheduling for enabled watch tasks.
 - Added an experimental Mercari public search scraper module, not yet wired into the main monitor loop.
+- Added a Mercari probe script for manual public search parser testing without database writes or Telegram notifications.
+- Mercari probe now prints page diagnostics when no item links are found.
+
+### Fixed
+
+- Mercari search result title parsing now skips standalone price lines.
 
 ## v0.8.0 - 2026-07-12
 

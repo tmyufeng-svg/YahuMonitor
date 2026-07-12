@@ -9,6 +9,7 @@ from models import Item
 class MercariScraper:
 
     SOURCE = "mercari"
+    ITEM_LINK_SELECTOR = 'a[href*="/item/"]'
 
     def __init__(self, page: Page):
         self.page = page
@@ -20,6 +21,17 @@ class MercariScraper:
             "https://jp.mercari.com/search"
             f"?keyword={encoded_keyword}"
         )
+
+    def wait_for_search_results(self, timeout=10000):
+        try:
+            self.page.locator(self.ITEM_LINK_SELECTOR).first.wait_for(
+                state="attached",
+                timeout=timeout,
+            )
+            return True
+
+        except Exception:
+            return False
 
     def build_item_url(self, item_id):
         return f"https://jp.mercari.com/item/{item_id}"
@@ -51,6 +63,21 @@ class MercariScraper:
 
         return int(match.group(1).replace(",", ""))
 
+    def is_price_line(self, line):
+        if line in {"\u00a5", "\uffe5"}:
+            return True
+
+        if re.fullmatch(r"[\d,]+", line):
+            return True
+
+        if re.fullmatch(r"[\u00a5\uffe5]\s*[\d,]+", line):
+            return True
+
+        if re.fullmatch(r"[\d,]+\s*\u5186", line):
+            return True
+
+        return False
+
     def parse_title_from_search_text(self, text):
         lines = [
             line.strip()
@@ -65,10 +92,7 @@ class MercariScraper:
         }
 
         for line in lines:
-            if "\u5186" in line:
-                continue
-
-            if "\u00a5" in line or "\uffe5" in line:
+            if self.is_price_line(line):
                 continue
 
             if line in ignored_lines:
@@ -166,7 +190,9 @@ class MercariScraper:
             wait_until="domcontentloaded",
         )
 
-        links = self.page.locator('a[href*="/item/"]')
+        self.wait_for_search_results()
+
+        links = self.page.locator(self.ITEM_LINK_SELECTOR)
 
         candidates_by_id = {}
         ordered_ids = []
@@ -206,3 +232,36 @@ class MercariScraper:
             candidates_by_id[item_id]
             for item_id in ordered_ids
         ]
+
+    def page_diagnostics(self, sample_limit=20):
+        links = self.page.locator("a")
+        link_count = links.count()
+        samples = []
+
+        for i in range(min(link_count, sample_limit)):
+            link = links.nth(i)
+
+            try:
+                href = link.get_attribute("href")
+                text = link.inner_text(timeout=500).strip()
+
+            except Exception as error:
+                href = None
+                text = f"<error: {error.__class__.__name__}>"
+
+            samples.append(
+                {
+                    "href": href,
+                    "text": text[:120],
+                }
+            )
+
+        return {
+            "url": self.page.url,
+            "title": self.page.title(),
+            "link_count": link_count,
+            "item_link_count": self.page.locator(
+                self.ITEM_LINK_SELECTOR
+            ).count(),
+            "samples": samples,
+        }
